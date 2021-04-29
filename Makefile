@@ -6,6 +6,10 @@ COMPANY		:= Deltabeard
 AUTHOR		:= Mahyar Koshkouei
 LICENSE_SPDX	:= BSD-0
 
+VERSION_MAJOR := 0
+VERSION_MINOR := 0
+VERSION_MICRO := 1
+
 # Default configurable build options
 BUILD	:= DEBUG
 
@@ -58,21 +62,42 @@ ifeq ($(PLATFORM),MSVC)
 	EXE	:= $(NAME).exe
 
 else ifeq ($(PLATFORM),3DS)
-include $(DEVKITARM)/3ds_rules
+#include $(DEVKITARM)/3ds_rules
 	APP_TITLE := $(NAME)
 	APP_DESCRIPTION := $(DESCRIPTION)
 	APP_AUTHOR := $(COMPANY)
 	APP_ICON := $(DEVKITPRO)/libctru/default_icon.png
 
+	export PATH := $(DEVKITPRO)/tools/bin:$(DEVKITPRO)/devkitARM/bin:$(PATH)
 	PREFIX	:= arm-none-eabi-
 	CC	:= $(PREFIX)gcc
 	CXX	:= $(PREFIX)g++
-	EXE	:= $(NAME).3dsx
+	EXE	:= $(NAME).3dsx $(NAME).3ds $(NAME).cia
 	OBJEXT	:= o
 	CFLAGS	:= -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -D__3DS__	\
 		-mword-relocations -fomit-frame-pointer -ffunction-sections				\
 		-I$(DEVKITPRO)/libctru/include
 	LDFLAGS	= -specs=3dsx.specs -L$(DEVKITPRO)/libctru/lib -lctru
+	
+	PRODUCT_CODE	:= CTR-P-LVGL
+	UNIQUE_ID		:= 0xFF3CD
+	CATEGORY		:= Application
+	USE_ON_SD		:= true
+	MEMORY_TYPE		:= Application
+	SYSTEM_MODE		:= 64MB
+	SYSTEM_MODE_EXT	:= Legacy
+	CPU_SPEED		:= 268MHz
+	ENABLE_L2_CACHE	:= false
+	MAKEROM_FLAGS := -rsf ext/3ds_cia_template.rsf -target t -exefslogo			\
+		-icon meta/icon.icn -banner meta/banner.bnr								\
+		-major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO)	\
+		-DAPP_TITLE="$(NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)"				\
+		-DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)"		\
+		-DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)"	\
+		-DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)"		\
+		-DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" \
+		-DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"									\
+		-logo "ext/logo.bcma.lz"
 
 else ifeq ($(PLATFORM),UNIX)
 	# Check that pkg-config is available
@@ -92,7 +117,7 @@ endif
 	RM	:= rm -f
 	CFLAGS	:= -Wall -Wextra -D_DEFAULT_SOURCE $(shell pkg-config sdl2 fribidi SDL2_ttf --cflags)
 	LDFLAGS	:= $(shell pkg-config sdl2 fribidi SDL2_ttf --libs)
-	EXE	:= $(NAME)
+	EXE	:= $(NAME).elf
 
 else
 	err := $(error Unsupported platform specified)
@@ -164,7 +189,7 @@ ifeq ($(CC)$(wildcard SDL2.dll),cl)
 endif
 
 # Add UI example application to target.
-TARGET += $(EXE)
+TARGET += $(addprefix out/,$(EXE))
 
 override CFLAGS += -Iinc -Iinc/lvgl -DBUILD=$(BUILD) $(EXTRA_CFLAGS)
 override LDFLAGS += $(EXTRA_LDFLAGS)
@@ -172,14 +197,11 @@ override LDFLAGS += $(EXTRA_LDFLAGS)
 all: $(TARGET)
 
 # Unix rules
-$(NAME): $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
 # MSVC rules
-$(NAME).exe: $(OBJS)
+%.exe: $(OBJS)
 	$(CC) $(CFLAGS) /Fe$@ $^ $(LDFLAGS)
 
 %.obj: %.c
@@ -191,10 +213,26 @@ $(NAME).exe: $(OBJS)
 		/DNAME="$(NAME)" $^
 	
 # Nintendo 3DS rules for use with devkitARM
-$(NAME).3dsx: $(NAME).elf $(NAME).smdh
+%.3dsx: %.elf %.smdh
+	3dsxtool $< $@ --smdh=$(word 2,$^)
+	
+%.3ds: %.elf meta/banner.bnr meta/icon.icn
+	makerom -f cci -o $@ -elf $< -DAPP_ENCRYPTED=true $(MAKEROM_FLAGS)
 
-$(NAME).elf: $(OBJS)
+%.cia: %.elf meta/banner.bnr meta/icon.icn
+	makerom -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(MAKEROM_FLAGS)
+
+%.elf: $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+	
+%.bnr: meta/banner.png meta/banner.wav
+	bannertool makebanner --image $(word 1,$^) --audio $(word 2,$^) --output $@
+
+%.icn: meta/icon.png
+	bannertool makesmdh -s "$(NAME)" -l "$(NAME) - $(DESCRIPTION)" -p "$(COMPANY)" --icon $^ -o $@
+
+%.smdh: meta/icon.png
+	smdhtool --create "$(NAME)" "$(DESCRIPTION)" "$(COMPANY)" $^ $@
 
 clean:
 	$(RM) $(NAME) $(NAME).elf $(NAME).3dsx $(NAME).exe $(RES) $(OBJS) $(SRCS:.c=.d) $(SRCS:.c=.gcda)
