@@ -115,8 +115,8 @@ endif
 	CC	:= cc
 	OBJEXT	:= o
 	RM	:= rm -f
-	CFLAGS	:= -Wall -Wextra -D_DEFAULT_SOURCE $(shell pkg-config sdl2 fribidi SDL2_ttf --cflags)
-	LDFLAGS	:= $(shell pkg-config sdl2 fribidi SDL2_ttf --libs)
+	CFLAGS	:= -Wall -Wextra -D_DEFAULT_SOURCE $(shell pkg-config sdl2 --cflags)
+	LDFLAGS	:= $(shell pkg-config sdl2 --libs)
 	EXE	:= $(NAME).elf
 
 else
