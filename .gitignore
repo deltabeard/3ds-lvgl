@@ -1,0 +1,14 @@
+*.d
+
+*.o
+*.obj
+*.elf
+
+*.a
+*.lib
+
+*.exe
+*.3dsx
+*.zip
+*.cia
+*.smdh

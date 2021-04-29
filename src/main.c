@@ -21,7 +21,7 @@
 #endif
 
 #if defined(__3DS__)
-# define LOOP_FUNCTION() aptMainLoop()
+# define LOOP_CHK() aptMainLoop()
 static int init_system(void **fb_top, void **fb_bot)
 {
 	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
@@ -45,6 +45,7 @@ static SDL_Window *win_top, *win_bot;
 static SDL_Surface *surf_top, *surf_bot;
 static int init_system(void **fb_top, void **fb_bot)
 {
+	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 	SDL_Init(SDL_INIT_EVERYTHING);
 	win_top = SDL_CreateWindow("3DS Top Screen",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -71,13 +72,11 @@ int main(int argc, char *argv[])
 	(void) argc;
 	(void) argv;
 
-	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_DEBUG);
 	init_system(&fb_top, &fb_bot);
 
 	while(LOOP_CHK())
 	{
-		SDL_Delay(10);
-#if 0
+#ifdef __3DS__
 		u32 input;
 
 		hidScanInput();
@@ -89,6 +88,8 @@ int main(int argc, char *argv[])
 		gfxFlushBuffers();
 		gfxSwapBuffers();
 		gspWaitForVBlank();
+#else
+		SDL_Delay(10);
 #endif
 	}
 
