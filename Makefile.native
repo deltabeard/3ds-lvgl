@@ -1,0 +1,14 @@
+# A basic Makefile for native builds with SDL2
+
+CFLAGS := -g3 -Wall -Wextra -std=c99
+LDFLAGS :=
+
+SRCS := $(wildcard source/*.c)
+OBJS := $(SRCS:.c=.o)
+
+override CFLAGS += $(shell sdl2-config --cflags)
+override LDFLAGS += $(shell sdl2-config --libs)
+
+all: 3ds-lvgl
+3ds-lvgl: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
