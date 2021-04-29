@@ -55,8 +55,6 @@ ifeq ($(PLATFORM),MSVC)
 	RM	:= del
 	CFLAGS	:= /nologo /utf-8 /W1 /Iinc /Iext\inc /FS /D_CRT_SECURE_NO_WARNINGS
 	LDFLAGS := /link /SUBSYSTEM:CONSOLE SDL2main.lib SDL2.lib shell32.lib /LIBPATH:ext\lib_$(VSCMD_ARG_TGT_ARCH)
-	ICON_FILE := icon.ico
-	OBJS	+= meta\winres.res
 	EXE	:= $(NAME).exe
 
 else ifeq ($(PLATFORM),3DS)
@@ -190,7 +188,7 @@ $(NAME).exe: $(OBJS)
 %.res: %.rc
 	rc /nologo /DCOMPANY="$(COMPANY)" /DDESCRIPTION="$(DESCRIPTION)" \
 		/DLICENSE="$(LICENSE)" /DGIT_VER="$(GIT_VER)" \
-		/DNAME="$(NAME)" /DICON_FILE="$(ICON_FILE)" $^
+		/DNAME="$(NAME)" $^
 	
 # Nintendo 3DS rules for use with devkitARM
 $(NAME).3dsx: $(NAME).elf $(NAME).smdh

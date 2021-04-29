@@ -298,8 +298,13 @@ typedef void * lv_img_decoder_user_data_t;
  * It removes the need to manually update the tick with `lv_tick_inc`) */
 #define LV_TICK_CUSTOM     1
 #if LV_TICK_CUSTOM == 1
-#define LV_TICK_CUSTOM_INCLUDE  "3ds.h"         /*Header for the system time function*/
-#define LV_TICK_CUSTOM_SYS_TIME_EXPR (osGetTime())     /*Expression evaluating to current system time in ms*/
+# if defined(__3DS__)
+#  define LV_TICK_CUSTOM_INCLUDE  <3ds.h>         /*Header for the system time function*/
+#  define LV_TICK_CUSTOM_SYS_TIME_EXPR (osGetTime())     /*Expression evaluating to current system time in ms*/
+# else
+#  define LV_TICK_CUSTOM_INCLUDE  <SDL.h>         /*Header for the system time function*/
+#  define LV_TICK_CUSTOM_SYS_TIME_EXPR (SDL_GetTicks())     /*Expression evaluating to current system time in ms*/
+# endif
 #endif   /*LV_TICK_CUSTOM*/
 
 typedef void * lv_disp_drv_user_data_t;             /*Type of user data in the display driver*/

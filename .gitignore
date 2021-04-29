@@ -6,9 +6,14 @@
 
 *.a
 *.lib
+*.dll
+*.ilk
+*.pdb
 
 *.exe
 *.3dsx
 *.zip
 *.cia
 *.smdh
+
+ext/
