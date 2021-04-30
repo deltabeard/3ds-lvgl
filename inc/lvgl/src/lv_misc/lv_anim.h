@@ -415,6 +415,8 @@ lv_anim_value_t lv_anim_path_bounce(const lv_anim_path_t * path, const lv_anim_t
  */
 lv_anim_value_t lv_anim_path_step(const lv_anim_path_t * path, const lv_anim_t * a);
 
+lv_anim_value_t lv_anim_path_ease_in_quint(const lv_anim_path_t *path, const lv_anim_t *a);
+
 /**********************
  *   GLOBAL VARIABLES
  **********************/

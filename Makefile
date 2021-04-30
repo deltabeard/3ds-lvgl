@@ -75,7 +75,7 @@ else ifeq ($(PLATFORM),3DS)
 	EXE	:= $(NAME).3dsx $(NAME).3ds $(NAME).cia
 	OBJEXT	:= o
 	CFLAGS	:= -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -D__3DS__	\
-		-mword-relocations -fomit-frame-pointer -ffunction-sections				\
+		-mword-relocations -fomit-frame-pointer -ffunction-sections		\
 		-I$(DEVKITPRO)/libctru/include
 	LDFLAGS	= -specs=3dsx.specs -L$(DEVKITPRO)/libctru/lib -lctru
 	
@@ -88,15 +88,15 @@ else ifeq ($(PLATFORM),3DS)
 	SYSTEM_MODE_EXT	:= Legacy
 	CPU_SPEED		:= 268MHz
 	ENABLE_L2_CACHE	:= false
-	MAKEROM_FLAGS := -rsf ext/3ds_cia_template.rsf -target t -exefslogo			\
-		-icon meta/icon.icn -banner meta/banner.bnr								\
+	MAKEROM_FLAGS := -rsf ext/3ds_cia_template.rsf -target t -exefslogo		\
+		-icon meta/icon.icn -banner meta/banner.bnr				\
 		-major $(VERSION_MAJOR) -minor $(VERSION_MINOR) -micro $(VERSION_MICRO)	\
-		-DAPP_TITLE="$(NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)"				\
-		-DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)"		\
+		-DAPP_TITLE="$(NAME)" -DAPP_PRODUCT_CODE="$(PRODUCT_CODE)"		\
+		-DAPP_UNIQUE_ID="$(UNIQUE_ID)" -DAPP_SYSTEM_MODE="$(SYSTEM_MODE)"	\
 		-DAPP_SYSTEM_MODE_EXT="$(SYSTEM_MODE_EXT)" -DAPP_CATEGORY="$(CATEGORY)"	\
-		-DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)"		\
+		-DAPP_USE_ON_SD="$(USE_ON_SD)" -DAPP_MEMORY_TYPE="$(MEMORY_TYPE)"	\
 		-DAPP_CPU_SPEED="$(CPU_SPEED)" -DAPP_ENABLE_L2_CACHE="$(ENABLE_L2_CACHE)" \
-		-DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"									\
+		-DAPP_VERSION_MAJOR="$(VERSION_MAJOR)"					\
 		-logo "ext/logo.bcma.lz"
 
 else ifeq ($(PLATFORM),UNIX)
@@ -185,10 +185,10 @@ ifeq ($(CC)$(wildcard SDL2.dll),cl)
     UNUSED := $(shell $(EXPAND_CMD))
 
     # Copy SDL2.DLL to output EXE directory.
-    UNUSED := $(shell COPY ext\lib_$(VSCMD_ARG_TGT_ARCH)\*.dll .\)
+    UNUSED := $(shell COPY ext\lib_$(VSCMD_ARG_TGT_ARCH)\*.dll .\out\)
 endif
 
-# Add UI example application to target.
+# Add UI example application to target and output binaries to 'out' folder.
 TARGET += $(addprefix out/,$(EXE))
 
 override CFLAGS += -Iinc -Iinc/lvgl -DBUILD=$(BUILD) $(EXTRA_CFLAGS)
@@ -197,6 +197,9 @@ override LDFLAGS += $(EXTRA_LDFLAGS)
 all: $(TARGET)
 
 # Unix rules
+%.elf: $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
 %.o: %.c
 	$(CC) -c $(CFLAGS) -o $@ $<
 
@@ -221,9 +224,6 @@ all: $(TARGET)
 
 %.cia: %.elf meta/banner.bnr meta/icon.icn
 	makerom -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(MAKEROM_FLAGS)
-
-%.elf: $(OBJS)
-	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 	
 %.bnr: meta/banner.png meta/banner.wav
 	bannertool makebanner --image $(word 1,$^) --audio $(word 2,$^) --output $@
