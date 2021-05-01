@@ -23,6 +23,7 @@
 # include <unistd.h>
 #endif
 
+#include <errno.h>
 #include <lvgl.h>
 
 #ifndef GSP_SCREEN_WIDTH_TOP

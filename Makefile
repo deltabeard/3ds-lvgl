@@ -163,7 +163,7 @@ endif
 
 # Apply build type settings
 ifeq ($(BUILD),DEBUG)
-	CFLAGS += $(call ISTARGNT,/Zi /MDd /RTC1 /sdl,-O0 -g3)
+	CFLAGS += $(call ISTARGNT,/Zi /MDd /RTC1 /sdl,-Og -g3)
 	CFLAGS += -DSDL_ASSERT_LEVEL=2
 else ifeq ($(BUILD),RELEASE)
 	CFLAGS += $(call ISTARGNT,/MD /O2 /fp:fast /GL /GT /Ot /O2,-Ofast -flto)
