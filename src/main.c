@@ -386,25 +386,27 @@ static void recreate_filepicker(void *p)
 static void create_bottom_ui(lv_disp_t *bottom_disp)
 {
 	lv_obj_t *tabview;
-	lv_obj_t *tab_file, *tab_playlist, *tab_settings, *tab_system;
+	lv_obj_t *tab_file, *tab_playlist, *tab_control, *tab_settings,
+		*tab_system;
 
 	/* Select bottom screen. */
 	lv_disp_set_default(bottom_disp);
 
 	/* Create tabview with main options. */
 	tabview = lv_tabview_create(lv_scr_act(), NULL);
-	lv_obj_set_width(tabview, GSP_SCREEN_HEIGHT_BOT);
+	lv_obj_set_size(tabview, GSP_SCREEN_HEIGHT_BOT, GSP_SCREEN_WIDTH_BOT);
 
-	tab_file = lv_tabview_add_tab(tabview, "File");
-	tab_playlist = lv_tabview_add_tab(tabview, "Playlist");
-	tab_settings = lv_tabview_add_tab(tabview, "Settings");
-	tab_system = lv_tabview_add_tab(tabview, "System");
+	tab_file = lv_tabview_add_tab(tabview, LV_SYMBOL_DIRECTORY);
+	tab_playlist = lv_tabview_add_tab(tabview, LV_SYMBOL_LIST);
+	tab_control = lv_tabview_add_tab(tabview, LV_SYMBOL_PLAY);
+	tab_settings = lv_tabview_add_tab(tabview, LV_SYMBOL_SETTINGS);
+	tab_system = lv_tabview_add_tab(tabview, LV_SYMBOL_POWER);
 
 	/* Create file picker. */
 	{
 		lv_obj_t *list = lv_page_create(tab_file, NULL);
-		lv_coord_t cw = GSP_SCREEN_HEIGHT_BOT;
-		lv_coord_t ch = lv_obj_get_height(tab_file);
+		lv_coord_t cw = lv_obj_get_width(tab_file) - 10;
+		lv_coord_t ch = lv_obj_get_height(tab_file) - 10;
 		lv_obj_set_size(list, cw, ch);
 		lv_theme_apply(list, LV_THEME_LIST);
 		lv_page_set_scrl_layout(list, LV_LAYOUT_COLUMN_MID);

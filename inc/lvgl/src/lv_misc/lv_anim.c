@@ -306,7 +306,7 @@ lv_anim_value_t lv_anim_path_ease_in_quint(const lv_anim_path_t *path, const lv_
 	else
 		t = (uint32_t)((uint32_t)a->act_time * 1024) / a->time;
 
-	int32_t step = lut[(t / 2) - 1];
+	int32_t step = lut[(t / 2)];
 
 	int32_t new_value;
 	new_value = step * (a->end - a->start);
