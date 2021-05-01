@@ -1,4 +1,4 @@
-name: C/C++ CI
+name: Build for SDL2 on Ubuntu Linux
 
 on:
   push:
@@ -16,6 +16,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Install SDL2
-      run: sudo apt-get install libsdl2
+      run: sudo apt-get install libsdl2-dev
     - name: Build
       run: make PLATFORM=UNIX BUILD=DEBUG
