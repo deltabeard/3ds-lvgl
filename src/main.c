@@ -87,6 +87,7 @@ struct system_ctx {
 static void *init_system(void)
 {
 	struct system_ctx *c;
+	int win_top_x, win_top_y, win_top_border;
 
 	c = SDL_calloc(1, sizeof(struct system_ctx));
 	if(c == NULL)
@@ -101,8 +102,14 @@ static void *init_system(void)
 	if(c->win_top == NULL)
 		goto err;
 
+	/* Align the bottom window to the top window. */
+	SDL_GetWindowPosition(c->win_top, &win_top_x, &win_top_y);
+	SDL_GetWindowBordersSize(c->win_top, &win_top_border, NULL, NULL, NULL);
+	win_top_x += (GSP_SCREEN_HEIGHT_TOP - GSP_SCREEN_HEIGHT_BOT) / 2;
+	win_top_y += GSP_SCREEN_WIDTH_TOP + win_top_border;
+
 	c->win_bot = SDL_CreateWindow("3DS Bottom Screen",
-		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		win_top_x, win_top_y,
 		GSP_SCREEN_HEIGHT_BOT, GSP_SCREEN_WIDTH_BOT, 0);
 	if(c->win_bot == NULL)
 		goto err;
