@@ -65,10 +65,12 @@ static void *init_system(void **fb_top, void **fb_bot)
 
 	return 0;
 }
+
 static void handle_events(void *ctx)
 {
 	return;
 }
+
 static void exit_system(void *ctx, void **fb_top, void **fb_bot)
 {
 	gfxExit();
@@ -144,6 +146,7 @@ err:
 	SDL_free(c);
 	goto out;
 }
+
 static void handle_events(void *ctx)
 {
 	SDL_Event e;
@@ -153,6 +156,7 @@ static void handle_events(void *ctx)
 	}
 	return;
 }
+
 static void render_present(void *ctx)
 {
 	struct system_ctx *c = ctx;
@@ -160,7 +164,8 @@ static void render_present(void *ctx)
 	SDL_UpdateWindowSurface(c->win_bot);
 	SDL_Delay(5);
 	return;
-};
+}
+
 static void flush_cb(SDL_Surface *dst, const lv_area_t *area,
 	lv_color_t *color_p)
 {
@@ -178,6 +183,7 @@ static void flush_cb(SDL_Surface *dst, const lv_area_t *area,
 	SDL_BlitSurface(src, NULL, dst, &dstrect);
 	SDL_FreeSurface(src);
 }
+
 static void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 		lv_color_t *color_p)
 {
@@ -185,6 +191,7 @@ static void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 	flush_cb(c->surf_top, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
+
 static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 		lv_color_t *color_p)
 {
@@ -192,6 +199,7 @@ static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 	flush_cb(c->surf_bot, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
+
 bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
 	struct system_ctx  *c = indev_drv->user_data;
@@ -367,7 +375,6 @@ static void recreate_filepicker(void *p)
 		lv_page_glue_obj(list_btn, true);
 		lv_btn_set_layout(list_btn, LV_LAYOUT_ROW_MID);
 		lv_obj_set_width(list_btn, w);
-		lv_obj_set_height(list_btn, lv_dpx(70));
 
 		img = lv_img_create(list_btn, img);
 		lv_img_set_src(img, symbol);
@@ -412,8 +419,8 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 	/* Create file picker. */
 	{
 		lv_obj_t *list = lv_page_create(tab_file, NULL);
-		lv_coord_t cw = lv_obj_get_width(tab_file) - 10;
-		lv_coord_t ch = lv_obj_get_height(tab_file) - 10;
+		lv_coord_t cw = lv_obj_get_width(tab_file);
+		lv_coord_t ch = lv_obj_get_height(tab_file);
 		lv_obj_set_size(list, cw, ch);
 		lv_theme_apply(list, LV_THEME_LIST);
 		lv_page_set_scrl_layout(list, LV_LAYOUT_COLUMN_MID);

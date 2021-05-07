@@ -235,7 +235,7 @@ all: $(TARGET)
 	smdhtool --create "$(NAME)" "$(DESCRIPTION)" "$(COMPANY)" $^ $@
 
 clean:
-	$(RM) $(NAME) $(NAME).elf $(NAME).3dsx $(NAME).exe $(RES) $(OBJS) $(SRCS:.c=.d) $(SRCS:.c=.gcda)
+	$(RM) $(TARGET) $(RES) $(OBJS) $(SRCS:.c=.d) $(SRCS:.c=.gcda)
 
 help:
 	@exit

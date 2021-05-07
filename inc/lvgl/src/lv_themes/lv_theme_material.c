@@ -860,11 +860,11 @@ static void tabview_win_shared_init(void)
     lv_style_set_radius(&styles->tabview_indic, LV_STATE_DEFAULT, LV_RADIUS_CIRCLE);
 
     lv_style_reset(&styles->tabview_page_scrl);
-    lv_style_set_pad_top(&styles->tabview_page_scrl, LV_STATE_DEFAULT, PAD_DEF);
-    lv_style_set_pad_bottom(&styles->tabview_page_scrl, LV_STATE_DEFAULT, PAD_DEF);
-    lv_style_set_pad_left(&styles->tabview_page_scrl, LV_STATE_DEFAULT, PAD_DEF);
-    lv_style_set_pad_right(&styles->tabview_page_scrl, LV_STATE_DEFAULT, PAD_DEF);
-    lv_style_set_pad_inner(&styles->tabview_page_scrl, LV_STATE_DEFAULT, PAD_DEF);
+    lv_style_set_pad_top(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
+    lv_style_set_pad_bottom(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
+    lv_style_set_pad_left(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
+    lv_style_set_pad_right(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
+    lv_style_set_pad_inner(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
 #endif
 }
 
