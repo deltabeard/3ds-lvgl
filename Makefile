@@ -194,6 +194,9 @@ TARGET += $(addprefix out/,$(EXE))
 override CFLAGS += -Iinc -Iinc/lvgl -DBUILD=$(BUILD) $(EXTRA_CFLAGS)
 override LDFLAGS += $(EXTRA_LDFLAGS)
 
+# Don't remove intermediate object files.
+.PRECIOUS: %.c %.o
+
 all: $(TARGET)
 
 # Unix rules
