@@ -25,6 +25,9 @@
 
 #include <errno.h>
 #include <lvgl.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
 #ifndef GSP_SCREEN_WIDTH_TOP
 # define GSP_SCREEN_WIDTH_TOP	240
@@ -36,6 +39,10 @@
 #define SCREEN_PIXELS_TOP (GSP_SCREEN_WIDTH_TOP * GSP_SCREEN_HEIGHT_TOP)
 #define SCREEN_PIXELS_BOT (GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT)
 
+static void show_error_msg(const char *msg, lv_disp_t *disp);
+static void recreate_filepicker(void *p);
+
+/* Declerations for platform specific functions. */
 /**
  * Initialise platform specific functions.
  *
@@ -48,33 +55,103 @@ static void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 	lv_color_t *color_p);
 static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 	lv_color_t *color_p);
-static bool read_pointer(struct _lv_indev_drv_t *indev_drv, lv_indev_data_t *data);
+static bool read_pointer(struct _lv_indev_drv_t *indev_drv, lv_indev_data_t
+*data);
 static void exit_system(void *ctx);
 
 
 #if defined(__3DS__)
 # define LOOP_CHK() aptMainLoop()
-static void *init_system(void **fb_top, void **fb_bot)
+struct system_ctx {
+	lv_color_t *fb_top;
+	lv_color_t *fb_bot;
+};
+static void *init_system(void)
 {
+	struct system_ctx *c;
+
+	c = calloc(1, sizeof(struct system_ctx));
+	if(c == NULL)
+		goto out;
+
 	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
 	gfxSetDoubleBuffering(GFX_TOP, false);
 	gfxSetDoubleBuffering(GFX_BOTTOM, false);
 
-	*fb_top = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL, NULL);
-	*fb_bot = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+	c->fb_top = (lv_color_t *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, NULL,
+						    NULL);
+	c->fb_bot = (lv_color_t *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL,
+						    NULL);
 
-	return 0;
+out:
+	return c;
 }
 
 static void handle_events(void *ctx)
 {
+	u32 kDown;
+
+	/* Scan all the inputs. */
+	hidScanInput();
+
+	kDown = hidKeysDown();
+
+	if (kDown & KEY_START)
+		APT_PrepareToCloseApplication(false);
+
 	return;
 }
 
-static void exit_system(void *ctx, void **fb_top, void **fb_bot)
+static void render_present(void *ctx)
+{
+	gfxFlushBuffers();
+	gfxSwapBuffers();
+
+	/* Wait for VBlank */
+	gspWaitForVBlank();
+}
+
+static void flush_cb(lv_color_t *dst, const lv_area_t *area,
+		     lv_color_t *color_p)
+{
+	lv_coord_t px_row_len = area->y2 - area->y1 + 1;
+
+	for(lv_coord_t y = area->x1; y < area->x2; y++)
+	{
+		lv_coord_t px_y = y * GSP_SCREEN_WIDTH_TOP;
+		lv_coord_t px = px_y - area->x1;
+
+		memcpy(&dst[px], color_p, px_row_len);
+		color_p += px_row_len;
+	}
+}
+
+static void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
+	lv_color_t *color_p)
+{
+	struct system_ctx *c = disp_drv->user_data;
+	flush_cb(c->fb_top, area, color_p);
+	lv_disp_flush_ready(disp_drv);
+}
+
+static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
+	lv_color_t *color_p)
+{
+	struct system_ctx *c = disp_drv->user_data;
+	flush_cb(c->fb_bot, area, color_p);
+	lv_disp_flush_ready(disp_drv);
+}
+
+static bool read_pointer(struct _lv_indev_drv_t *indev_drv,
+	lv_indev_data_t *data)
+{
+}
+
+static void exit_system(void *ctx)
 {
 	gfxExit();
-	return 0;
+	free(ctx);
+	return;
 }
 
 #else
@@ -279,30 +356,82 @@ static void exit_system(void *ctx)
 }
 #endif
 
-static void recreate_filepicker(void *p);
+void mboxen_del(lv_obj_t *mbox, lv_event_t event)
+{
+	lv_obj_t *bg;
+
+	if(event != LV_EVENT_CLICKED)
+		return;
+
+	if(lv_msgbox_get_active_btn(mbox) == LV_BTNMATRIX_BTN_NONE)
+		return;
+
+	bg = lv_obj_get_parent(mbox);
+	lv_obj_del_async(bg);
+}
+
+/**
+ * Displays an error message box.
+ * The application must continue to function correctly.
+ */
+static void show_error_msg(const char *msg, lv_disp_t *disp)
+{
+	static const char *btns[] = { "OK", "" };
+	lv_obj_t *scr, *bg, *mbox1;
+	lv_coord_t ver, hor;
+
+	lv_disp_set_default(disp);
+	scr = lv_scr_act();
+
+	ver = lv_disp_get_ver_res(disp);
+	hor = lv_disp_get_hor_res(disp);
+
+	bg = lv_obj_create(scr, NULL);
+	lv_obj_set_size(bg, hor, ver);
+	lv_obj_set_style_local_border_width(bg, LV_OBJ_PART_MAIN,
+			LV_STATE_DEFAULT, 0);
+	lv_obj_set_style_local_radius(bg, LV_OBJ_PART_MAIN,
+			LV_STATE_DEFAULT, 0);
+	lv_obj_set_style_local_bg_color(bg, LV_OBJ_PART_MAIN,
+			LV_STATE_DEFAULT, LV_COLOR_BLACK);
+	lv_obj_set_style_local_bg_opa(bg, LV_OBJ_PART_MAIN,
+			LV_STATE_DEFAULT, 80);
+
+	mbox1 = lv_msgbox_create(bg, NULL);
+	lv_msgbox_set_text(mbox1, msg);
+	lv_msgbox_add_btns(mbox1, btns);
+	lv_obj_set_event_cb(mbox1, mboxen_del);
+	lv_obj_set_width(mbox1, ver - 56);
+	//lv_obj_align_mid(mbox1, NULL, LV_ALIGN_CENTER, 0, 0);
+	lv_obj_set_pos(mbox1, 56/2, 32/2);
+}
 
 static void btnev_chdir(lv_obj_t *btn, lv_event_t event)
 {
 	lv_obj_t *label;
 	const char *dir;
 	lv_obj_t *list;
+	lv_disp_t *disp;
 
 	label = lv_obj_get_child(btn, NULL);
 	dir = lv_label_get_text(label);
 	list = lv_obj_get_user_data(btn);
+	disp = lv_obj_get_user_data(list);
 
 	if(event != LV_EVENT_CLICKED)
 		return;
 
 	if(chdir(dir) != 0)
 	{
-		SDL_LogError(SDL_LOG_CATEGORY_APPLICATION,
-			"Changing directory to %s failed", dir);
+		char err_txt[256] = "";
+		snprintf(err_txt, sizeof(err_txt),
+			 "Changing directory to '%s' failed:\n"
+			 "%s",
+			dir, strerror(errno));
+		show_error_msg(err_txt, disp);
 		return;
 	}
 
-	SDL_LogVerbose(SDL_LOG_CATEGORY_APPLICATION,
-		"Changing directory to %s", dir);
 	lv_async_call(recreate_filepicker, list);
 
 	return;
@@ -315,6 +444,26 @@ static void recreate_filepicker(void *p)
 	struct dirent **namelist;
 	int entries;
 	int w;
+	lv_disp_t *disp;
+
+	disp = lv_obj_get_user_data(list);
+	entries = scandir(".", &namelist, NULL, alphasort);
+	if(entries == -1)
+	{
+		char err_txt[256] = "";
+
+		snprintf(err_txt, sizeof(err_txt),
+			"Unable to scan directory: %s",
+			strerror(errno));
+
+		show_error_msg(err_txt, disp);
+
+		/* Attempt to recover by going up a directory. */
+		chdir("..");
+
+		/* Don't clean file list on error. */
+		return;
+	}
 
 	/* Clean file list */
 	{
@@ -325,28 +474,15 @@ static void recreate_filepicker(void *p)
 		lv_fit_t scrl_fitb = lv_cont_get_fit_bottom(scrl);
 		lv_layout_t scrl_layout = lv_cont_get_layout(scrl);
 
-		/* Do not re-fit all the buttons on the removable of each button. */
+		/* Do not re-fit all the buttons on the removable of each
+button. */
 		lv_cont_set_fit(scrl, LV_FIT_NONE);
 		lv_cont_set_layout(scrl, LV_LAYOUT_OFF);
 		lv_page_clean(list);
-		lv_cont_set_fit4(scrl, scrl_fitl, scrl_fitr, scrl_fitr, scrl_fitb);
+		lv_cont_set_fit4(scrl, scrl_fitl, scrl_fitr, scrl_fitr,
+scrl_fitb);
 		lv_cont_set_layout(scrl, scrl_layout);
 		w = lv_obj_get_width_fit(scrl);
-	}
-
-	entries = scandir(".", &namelist, NULL, alphasort);
-	if(entries == -1)
-	{
-		lv_obj_t *l;
-		char err_txt[512] = "Unknown";
-
-		SDL_snprintf(err_txt, sizeof(err_txt),
-			"Unable to scan directory: %s", strerror(errno));
-
-		SDL_LogError(SDL_LOG_CATEGORY_VIDEO, "%s", err_txt);
-		l = lv_label_create(list, NULL);
-		lv_label_set_text(l, err_txt);
-		return;
 	}
 
 	for(int e = 0; e < entries; e++)
@@ -355,7 +491,7 @@ static void recreate_filepicker(void *p)
 		const char *symbol;
 
 		/* Ignore "current directory" file. */
-		if(SDL_strcmp(namelist[e]->d_name, ".") == 0)
+		if(strcmp(namelist[e]->d_name, ".") == 0)
 			continue;
 
 		switch(namelist[e]->d_type)
@@ -425,12 +561,16 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 		lv_theme_apply(list, LV_THEME_LIST);
 		lv_page_set_scrl_layout(list, LV_LAYOUT_COLUMN_MID);
 		lv_page_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_AUTO);
+
+		/* Store target display in user data for the file list. */
+		lv_obj_set_user_data(list, bottom_disp);
 		lv_async_call(recreate_filepicker, list);
 	}
 
 	return;
 }
 
+#if 0
 void print_SDL_cb(lv_log_level_t level, const char *file, uint32_t line,
 	const char *fn, const char *desc)
 {
@@ -446,6 +586,7 @@ void print_SDL_cb(lv_log_level_t level, const char *file, uint32_t line,
 	SDL_LogMessage(SDL_LOG_CATEGORY_VIDEO, p[level], "%s: %s", fn, desc);
 	return;
 }
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -505,19 +646,7 @@ int main(int argc, char *argv[])
 
 	while(LOOP_CHK())
 	{
-#ifdef __3DS__
-		u32 input;
-
-		hidScanInput();
-		input = hidKeysDown();
-
-		if(input & KEY_START)
-			break;
-
-		gfxFlushBuffers();
-		gfxSwapBuffers();
-		gspWaitForVBlank();
-#endif
+		handle_events(ctx);
 		lv_task_handler();
 		render_present(ctx);
 	}
