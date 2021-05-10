@@ -166,16 +166,15 @@ endif
 # Apply build type settings
 ifeq ($(BUILD),DEBUG)
 	CFLAGS += $(call ISTARGNT,/Zi /MDd /RTC1 /sdl,-Og -g3)
-	CFLAGS += -DSDL_ASSERT_LEVEL=2
+	CFLAGS += -D__DEBUG__
 else ifeq ($(BUILD),RELEASE)
 	CFLAGS += $(call ISTARGNT,/MD /O2 /fp:fast /GL /GT /Ot /O2,-Ofast -flto)
 	LDFLAGS += $(call ISTARGNT,/LTCG,)
 else ifeq ($(BUILD),RELDEBUG)
 	CFLAGS += $(call ISTARGNT,/MDd /O2 /fp:fast,-Ofast -g3 -flto)
+	CFLAGS += -D__DEBUG__
 else ifeq ($(BUILD),RELMINSIZE)
 	CFLAGS += $(call ISTARGNT,/MD /O1 /fp:fast /GL /GT /Os,-Os -ffast-math -s -flto)
-else ifeq ($(BUILD),BASIC)
-	CFLAGS += $(call ISTARGNT,,)
 else
 	err := $(error Unknown build configuration '$(BUILD)')
 endif
