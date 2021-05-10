@@ -69,26 +69,16 @@ static void exit_system(void *ctx);
 
 #if defined(__3DS__)
 #define LOOP_CHK() aptMainLoop()
-struct system_ctx
-{
-	lv_color_t *fb_top;
-	lv_color_t *fb_bot;
-};
-
 static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 			 lv_color_t **fb_top_2, uint32_t *fb_top_2_px,
 			 lv_color_t **fb_bot_1, uint32_t *fb_bot_1_px,
 			 lv_color_t **fb_bot_2, uint32_t *fb_bot_2_px)
 {
-	struct system_ctx *c;
+	void *c = NULL;
 	u16 width, height;
 
 	/* This stops scandir() from working. */
-	//consoleDebugInit(debugDevice_SVC);
-
-	c = calloc(1, sizeof(struct system_ctx));
-	if (c == NULL)
-		goto out;
+	// consoleDebugInit(debugDevice_SVC);
 
 	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, true);
 	gfxSetDoubleBuffering(GFX_TOP, true);
@@ -112,6 +102,8 @@ static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 						    &width, &height);
 	*fb_bot_2_px = width * height;
 
+	c = c - 1;
+
 out:
 	return c;
 }
@@ -122,11 +114,7 @@ static void handle_events(void *ctx)
 
 	/* Scan all the inputs. */
 	hidScanInput();
-
 	kDown = hidKeysDown();
-
-	if (kDown & KEY_START)
-		quit = true;
 
 	return;
 }
@@ -158,12 +146,25 @@ static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 static bool read_pointer(struct _lv_indev_drv_t *indev_drv,
 			 lv_indev_data_t *data)
 {
+	static touchPosition touch = {0};
+	u32 kRepeat;
+
+	kRepeat = hidKeysHeld();
+
+	if (kRepeat & KEY_TOUCH)
+		hidTouchRead(&touch);
+
+	data->point.x = touch.px;
+	data->point.y = touch.py;
+	data->state =
+	    (kRepeat & KEY_TOUCH) ? LV_INDEV_STATE_PR : LV_INDEV_STATE_REL;
+	return false;
 }
 
 static void exit_system(void *ctx)
 {
 	gfxExit();
-	free(ctx);
+	ctx = NULL;
 	return;
 }
 
@@ -685,20 +686,30 @@ int main(int argc, char *argv[])
 	lv_disp_drv_top.buffer = &lv_disp_buf_top;
 	lv_disp_drv_top.flush_cb = flush_top_cb;
 	lv_disp_drv_top.user_data = ctx;
-	// lv_disp_drv_top.rotated = LV_DISP_ROT_90;
-	// lv_disp_drv_top.sw_rotate = 1;
+#ifdef __3DS__
+	lv_disp_drv_top.rotated = LV_DISP_ROT_90;
+	lv_disp_drv_top.sw_rotate = 0;
+        lv_disp_drv_top.hor_res = GSP_SCREEN_HEIGHT_TOP;
+	lv_disp_drv_top.ver_res = GSP_SCREEN_WIDTH_TOP;
+#else
 	lv_disp_drv_top.hor_res = GSP_SCREEN_WIDTH_TOP;
 	lv_disp_drv_top.ver_res = GSP_SCREEN_HEIGHT_TOP;
+#endif
 	lv_disp_top = lv_disp_drv_register(&lv_disp_drv_top);
 
 	lv_disp_drv_init(&lv_disp_drv_bot);
 	lv_disp_drv_bot.buffer = &lv_disp_buf_bot;
 	lv_disp_drv_bot.flush_cb = flush_bot_cb;
 	lv_disp_drv_bot.user_data = ctx;
-	// lv_disp_drv_bot.rotated = LV_DISP_ROT_90;
-	// lv_disp_drv_bot.sw_rotate = 1;
+#ifdef __3DS__
+	lv_disp_drv_bot.rotated = LV_DISP_ROT_90;
+	lv_disp_drv_bot.sw_rotate = 0;
+        lv_disp_drv_bot.hor_res = GSP_SCREEN_HEIGHT_BOT;
+	lv_disp_drv_bot.ver_res = GSP_SCREEN_WIDTH_BOT;
+#else
 	lv_disp_drv_bot.hor_res = GSP_SCREEN_WIDTH_BOT;
 	lv_disp_drv_bot.ver_res = GSP_SCREEN_HEIGHT_BOT;
+#endif
 	lv_disp_bot = lv_disp_drv_register(&lv_disp_drv_bot);
 
 	lv_disp_drv_init(&lv_disp_drv_top);
@@ -718,7 +729,7 @@ int main(int argc, char *argv[])
 
 	while (LOOP_CHK() && quit == false)
 	{
-		// handle_events(ctx);
+		handle_events(ctx);
 		lv_task_handler();
 		render_present(ctx);
 	}
