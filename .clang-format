@@ -1,0 +1,18 @@
+﻿---
+BasedOnStyle: Microsoft
+AlignConsecutiveMacros: 'true'
+AlignConsecutiveAssignments: 'false'
+AlignConsecutiveDeclarations: 'false'
+AllowShortBlocksOnASingleLine: 'false'
+BreakBeforeBraces: Allman
+ColumnLimit: '80'
+DerivePointerAlignment: 'false'
+IndentCaseLabels: 'false'
+IndentWidth: '8'
+Language: Cpp
+PointerAlignment: Right
+ReflowComments: 'true'
+TabWidth: '8'
+UseTab: Always
+
+...
