@@ -48,8 +48,10 @@ endef
 
 ifdef VSCMD_VER
 	PLATFORM := MSVC
+	BRCK := $(strip \ )
 else
 	PLATFORM := UNIX
+	BRCK := /
 endif
 
 ifeq ($(PLATFORM),MSVC)
@@ -143,7 +145,7 @@ SRCS := $(wildcard src/*.c) $(wildcard src/**/*.c) $(wildcard inc/lvgl/src/**/*.
 
 # If using del, use Windows style folder separator.
 ifeq ($(RM),del)
-	SRCS := $(subst /,\,$(SRCS))
+	SRCS := $(subst /,$(BRCK),$(SRCS))
 endif
 
 OBJS += $(SRCS:.c=.$(OBJEXT))
@@ -189,7 +191,7 @@ ifeq ($(CC)$(wildcard SDL2.dll),cl)
 endif
 
 # Add UI example application to target and output binaries to 'out' folder.
-TARGET += $(addprefix out/,$(EXE))
+TARGET += $(addprefix out$(BRCK),$(EXE))
 
 override CFLAGS += -Iinc -Iinc/lvgl -DBUILD=$(BUILD) $(EXTRA_CFLAGS)
 override LDFLAGS += $(EXTRA_LDFLAGS)
@@ -238,7 +240,10 @@ all: $(TARGET)
 	smdhtool --create "$(NAME)" "$(DESCRIPTION)" "$(COMPANY)" $^ $@
 
 clean:
-	$(RM) $(TARGET) $(RES) $(OBJS) $(SRCS:.c=.d) $(SRCS:.c=.gcda)
+	$(RM) $(TARGET) $(RES) $(OBJS)
+	$(RM) $(TARGET:.exe=.ilk)
+	$(RM) $(TARGET:.exe=.pdb)
+	$(RM) $(SRCS:.c=.d) $(SRCS:.c=.gcda)
 
 help:
 	@exit
