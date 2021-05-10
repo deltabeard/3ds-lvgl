@@ -83,7 +83,8 @@ static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	struct system_ctx *c;
 	u16 width, height;
 
-	consoleDebugInit(debugDevice_SVC);
+	/* This stops scandir() from working. */
+	//consoleDebugInit(debugDevice_SVC);
 
 	c = calloc(1, sizeof(struct system_ctx));
 	if (c == NULL)
