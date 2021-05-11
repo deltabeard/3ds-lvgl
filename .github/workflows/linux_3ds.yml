@@ -25,7 +25,7 @@ jobs:
         path: bannertool.elf
 
   job_ctrtools:
-    name: Build ctrtool and makerom
+    name: Build ${{ matrix.prog }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -58,7 +58,6 @@ jobs:
       uses: actions/checkout@v2
       
     - name: Download 3ds-buildtools artifact
-      id: download-art
       uses: actions/download-artifact@v2
       with:
         name: 3ds-buildtools
@@ -66,16 +65,15 @@ jobs:
     - name: Dump information
       run: |
         find ./
-        echo ${{steps.download.outputs.download-path}}
         du -h
         env
         echo ${PATH}
         
     - name: Restore artifact file permissions and install
       run: |
-        sudo mv ./bannertool.elf/bannertool.elf /usr/bin/bannertool
-        sudo mv ./makerom/makerom/makerom /usr/bin/makerom
-        sudo mv ./ctrtool/ctrtool/ctrtool /usr/bin/ctrtool
+        sudo mv ./bannertool.elf /usr/bin/bannertool
+        sudo mv ./makerom /usr/bin/makerom
+        sudo mv ./ctrtool /usr/bin/ctrtool
         sudo chmod -R +x /usr/bin/bannertool /usr/bin/makerom /usr/bin/ctrtool
         
     - name: Build
