@@ -7,7 +7,7 @@ on:
 
 jobs:
   job_bannertool:
-    name: Build Bannertool
+    name: Build bannertool
     runs-on: ubuntu-latest
     steps:
     - name: Checkout bannertool
@@ -31,7 +31,7 @@ jobs:
       matrix:
         prog: [ctrtool, makerom]
     steps:
-    - name: Checkout bannertool
+    - name: Checkout Project_CTR
       uses: actions/checkout@v2
       with:
         repository: 3DSGuy/Project_CTR
@@ -61,13 +61,6 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: 3ds-buildtools
-     
-    - name: Dump information
-      run: |
-        find ./
-        du -h
-        env
-        echo ${PATH}
         
     - name: Restore artifact file permissions and install
       run: |
@@ -84,7 +77,7 @@ jobs:
     - name: Upload build output
       uses: actions/upload-artifact@v2
       with:
-        name: 3DS-artifact
+        name: 3ds-lvgl-output
         path: |
           README.md
           out/*.3dsx
