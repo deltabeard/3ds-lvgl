@@ -48,6 +48,7 @@ jobs:
         path: ${{ matrix.prog }}/${{ matrix.prog }}
     
   job_build:
+    name: Build 3DS-LVGL
     runs-on: ubuntu-latest
     needs: [job_bannertool, job_ctrtools]
     container:
