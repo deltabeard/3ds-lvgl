@@ -83,6 +83,7 @@ jobs:
         
     - name: Restore artifact file permissions and install
       run: |
+        find ./
         chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
         mkdir bin
         mv bannertool.elf ./bin/bannertool
