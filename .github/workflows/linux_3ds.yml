@@ -83,12 +83,16 @@ jobs:
         
     - name: Restore artifact file permissions and install
       run: |
-        chmod 0755 bannertool.elf ctrtool/ctrtool makerom/makerom
-        sudo cp -r bannertool.elf /usr/bin/bannertool
-        sudo cp -r ctrtool/ctrtool makerom/makerom /usr/bin/
+        chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
+        mkdir bin
+        mv bannertool.elf ./bin/
+        mv -t ./bin/ ctrtool/ctrtool makerom/makerom
+        chmod -R +x ./bin/*
         
     - name: Build
-      run: make PLATFORM=3DS BUILD=DEBUG
+      run: |
+        export PATH=$(pwd)/bin:${PATH}
+        make PLATFORM=3DS BUILD=DEBUG
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
