@@ -70,9 +70,7 @@ jobs:
         sudo chmod -R +x /usr/bin/bannertool /usr/bin/makerom /usr/bin/ctrtool
         
     - name: Build
-      run: |
-        export PATH=$(pwd)/bin:${PATH}
-        make PLATFORM=3DS BUILD=DEBUG
+      run: make PLATFORM=3DS BUILD=RELDEBUG
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
