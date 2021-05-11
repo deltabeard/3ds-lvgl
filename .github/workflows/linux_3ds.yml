@@ -21,7 +21,7 @@ jobs:
     - name: Upload bannertool binary artifact
       uses: actions/upload-artifact@v2
       with:
-        name: bannertool-artifact
+        name: 3ds-buildtools
         path: bannertool.elf
 
   job_ctrtools:
@@ -44,7 +44,7 @@ jobs:
     - name: Upload ${{ matrix.prog }} binary artifact
       uses: actions/upload-artifact@v2
       with:
-        name: ${{ matrix.prog }}
+        name: 3ds-buildtools
         path: ${{ matrix.prog }}/${{ matrix.prog }}
     
   job_build:
@@ -57,26 +57,16 @@ jobs:
     - name: Checkout 3ds-lvgl
       uses: actions/checkout@v2
       
-    - name: Download bannertool artifact
+    - name: Download 3ds-buildtools artifact
+      id: download-art
       uses: actions/download-artifact@v2
       with:
-        name: bannertool-artifact
-        path: bannertool.elf
-        
-    - name: Download ctrtool artifact
-      uses: actions/download-artifact@v2
-      with:
-        name: ctrtool
-        path: ctrtool/ctrtool
-        
-    - name: Download makerom artifact
-      uses: actions/download-artifact@v2
-      with:
-        name: makerom
-        path: makerom/makerom
+        name: 3ds-buildtools
      
     - name: Dump information
       run: |
+        find ./
+        echo ${{steps.download.outputs.download-path}}
         du -h
         env
         echo ${PATH}
