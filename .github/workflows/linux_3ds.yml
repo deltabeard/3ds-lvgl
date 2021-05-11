@@ -100,6 +100,7 @@ jobs:
       
     - name: Build
       run: make PLATFORM=MSVC BUILD=RELEASE
+      shell: cmd
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
