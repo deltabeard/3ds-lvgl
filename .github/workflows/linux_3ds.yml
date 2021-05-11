@@ -1,4 +1,4 @@
-name: Build 3DS images on Linux
+name: Build for 3DS on Ubuntu Linux
 
 on:
   push:
@@ -13,6 +13,16 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+    - name: Checkout bannertool
+      uses: actions/checkout@v2
+      with:
+        repository: deltabeard/bannertool
+        path: ext/bannertool
+    - name: Build Bannertool
+      run: |
+        cd ext
+        make -C ext/bannertool
+        sudo cp ext/bannertool/bannertool.elf /usr/bin/bannertool
     - name: Build
       run: make PLATFORM=3DS BUILD=DEBUG -j$(nproc)
     - uses: "marvinpinto/action-automatic-releases@latest"
