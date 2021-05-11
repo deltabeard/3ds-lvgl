@@ -85,7 +85,7 @@ jobs:
       run: |
         chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
         mkdir bin
-        mv bannertool.elf ./bin/
+        mv bannertool.elf ./bin/bannertool
         mv -t ./bin/ ctrtool/ctrtool makerom/makerom
         chmod -R +x ./bin/*
         
