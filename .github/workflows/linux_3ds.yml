@@ -50,6 +50,8 @@ jobs:
   job_build:
     runs-on: ubuntu-latest
     needs: [job_bannertool, job_ctrtools]
+    container:
+      image: 'devkitpro/devkitarm'
 
     steps:
     - name: Checkout 3ds-lvgl
@@ -81,7 +83,7 @@ jobs:
         
     - name: Restore artifact file permissions and install
       run: |
-        chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
+        chmod u+x bannertool.elf ctrtool/ctrtool makerom/makerom
         sudo cp -r bannertool.elf ctrtool/ctrtool makerom/makerom /usr/bin/
         
     - name: Build
