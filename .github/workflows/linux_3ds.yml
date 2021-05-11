@@ -92,7 +92,7 @@ jobs:
     - name: Build
       run: |
         export PATH=$(pwd)/bin:${PATH}
-        make PLATFORM=3DS BUILD=DEBUG
+        make PLATFORM=3DS BUILD=DEBUG out/3DS-LVGL.elf out/3DS-LVGL.3dsx
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
