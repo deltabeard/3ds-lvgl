@@ -16,7 +16,7 @@ jobs:
         repository: deltabeard/bannertool
         
     - name: Build Bannertool
-      run: make VERSION_MAJOR=1 VERSION_MINOR=2 VERSION_MICRO=0
+      run: make VERSION_MAJOR=1 VERSION_MINOR=2 VERSION_MICRO=0 CC="gcc -static" CXX="g++ -static"
       
     - name: Upload bannertool binary artifact
       uses: actions/upload-artifact@v2
@@ -39,7 +39,7 @@ jobs:
     - name: Build ${{ matrix.prog }}
       run: |
         cd ${{ matrix.prog }}
-        make ${{ matrix.makeArgs }}
+        make CC="gcc -static" CXX="g++ -static" ${{ matrix.makeArgs }}
       
     - name: Upload ${{ matrix.prog }} binary artifact
       uses: actions/upload-artifact@v2
