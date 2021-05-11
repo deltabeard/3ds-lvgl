@@ -101,8 +101,8 @@ jobs:
     - name: Prepare dependencies
       shell: cmd
       run: |
-        ext/MSVC_DEPS.exe -o"ext" -y
-        COPY ext/lib_%VSCMD_ARG_TGT_ARCH%/*.dll ./out/
+        ext\MSVC_DEPS.exe -o"ext" -y
+        COPY ext\lib_%VSCMD_ARG_TGT_ARCH%\*.dll .\out\
 
     - name: Build
       run: make PLATFORM=MSVC BUILD=RELEASE UNUSED=DNU
