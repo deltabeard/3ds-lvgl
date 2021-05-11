@@ -94,6 +94,7 @@ jobs:
         file ./bin/bannertool
         file $(which ls)
         ls -aslh ./bin/
+        find ./
         
     - name: Build
       run: |
