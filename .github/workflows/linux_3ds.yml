@@ -1,0 +1,29 @@
+name: Build 3DS images on Linux
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: 'devkitpro/devkitarm'
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Build
+      run: make PLATFORM=3DS BUILD=DEBUG -j$(nproc)
+    - uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest"
+        prerelease: true
+        title: "Development Build"
+        files: |
+          README.md
+          out/*.3dsx
+          out/*.3ds
+          out/*.elf
+          out/*.cia
