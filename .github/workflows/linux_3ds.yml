@@ -88,6 +88,12 @@ jobs:
         mv bannertool.elf ./bin/bannertool
         mv -t ./bin/ ctrtool/ctrtool makerom/makerom
         chmod -R +x ./bin/*
+        du -h
+        env
+        echo ${PATH}
+        file ./bin/bannertool
+        file $(which ls)
+        ls -aslh ./bin/
         
     - name: Build
       run: |
