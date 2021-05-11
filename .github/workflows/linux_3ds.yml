@@ -83,8 +83,9 @@ jobs:
         
     - name: Restore artifact file permissions and install
       run: |
-        chmod u+x bannertool.elf ctrtool/ctrtool makerom/makerom
-        sudo cp -r bannertool.elf ctrtool/ctrtool makerom/makerom /usr/bin/
+        chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
+        sudo cp -r bannertool.elf /usr/bin/bannertool
+        sudo cp -r ctrtool/ctrtool makerom/makerom /usr/bin/
         
     - name: Build
       run: make PLATFORM=3DS BUILD=DEBUG
