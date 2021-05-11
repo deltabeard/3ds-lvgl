@@ -83,24 +83,15 @@ jobs:
         
     - name: Restore artifact file permissions and install
       run: |
-        find ./
-        chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
-        mkdir bin
-        mv bannertool.elf ./bin/bannertool
-        mv -t ./bin/ ctrtool/ctrtool makerom/makerom
-        chmod -R +x ./bin/*
-        du -h
-        env
-        echo ${PATH}
-        file ./bin/bannertool
-        file $(which ls)
-        ls -aslh ./bin/
-        find ./
+        sudo mv ./bannertool.elf/bannertool.elf /usr/bin/bannertool
+        sudo mv ./makerom/makerom/makerom /usr/bin/makerom
+        sudo mv ./ctrtool/ctrtool/ctrtool /usr/bin/ctrtool
+        sudo chmod -R +x /usr/bin/bannertool /usr/bin/makerom /usr/bin/ctrtool
         
     - name: Build
       run: |
         export PATH=$(pwd)/bin:${PATH}
-        make PLATFORM=3DS BUILD=DEBUG out/3DS-LVGL.elf out/3DS-LVGL.3dsx
+        make PLATFORM=3DS BUILD=DEBUG
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
