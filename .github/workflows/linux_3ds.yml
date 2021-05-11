@@ -1,4 +1,4 @@
-name: Build for 3DS on Ubuntu Linux
+name: Build for 3DS and Windows NT
 
 on:
   push:
@@ -47,8 +47,8 @@ jobs:
         name: 3ds-buildtools
         path: ${{ matrix.prog }}/${{ matrix.prog }}
     
-  job_build:
-    name: Build 3DS-LVGL
+  job_3ds:
+    name: Build 3DS-LVGL for 3DS
     runs-on: ubuntu-latest
     needs: [job_bannertool, job_ctrtools]
     container:
@@ -83,3 +83,34 @@ jobs:
           out/*.3ds
           out/*.elf
           out/*.cia
+          
+  job_nt:
+    name: Build 3DS-LVGL for Windows NT
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout 3ds-lvgl
+      uses: actions/checkout@v2
+      
+    - name: Prepare MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+      
+    - name: Install GNU Make
+      run: choco install make
+
+    - name: Prepare dependencies
+      shell: cmd
+      run: |
+        ext\MSVC_DEPS.exe -o"ext" -y
+        COPY ext\lib_%VSCMD_ARG_TGT_ARCH%\*.dll .\out\
+
+    - name: Build
+      run: make PLATFORM=MSVC BUILD=RELEASE UNUSED=DNU
+      
+    - name: Upload build output
+      uses: actions/upload-artifact@v2
+      with:
+        name: 3ds-lvgl-output
+        path: |
+          out/*.exe
+          out/*.dll
