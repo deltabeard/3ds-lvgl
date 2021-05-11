@@ -6,31 +6,90 @@ on:
   pull_request:
 
 jobs:
-  build:
+  job_bannertool:
+    name: Build Bannertool
     runs-on: ubuntu-latest
-    container:
-      image: 'devkitpro/devkitarm'
-
     steps:
-    - uses: actions/checkout@v2
     - name: Checkout bannertool
       uses: actions/checkout@v2
       with:
         repository: deltabeard/bannertool
-        path: ext/bannertool
+        
     - name: Build Bannertool
-      run: |
-        make -C ${GITHUB_WORKSPACE}/ext/bannertool
-        sudo cp ${GITHUB_WORKSPACE}/ext/bannertool/bannertool.elf /usr/bin/bannertool
-    - name: Build
-      run: make PLATFORM=3DS BUILD=DEBUG -j$(nproc)
-    - uses: "marvinpinto/action-automatic-releases@latest"
+      run: make
+      
+    - name: Upload bannertool binary artifact
+      uses: actions/upload-artifact@v2
       with:
-        repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "latest"
-        prerelease: true
-        title: "Development Build"
-        files: |
+        name: bannertool-artifact
+        path: bannertool.elf
+
+  job_ctrtools:
+    name: Build ctrtool and makeroom
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        prog: [ctrtool, makerom]
+    steps:
+    - name: Checkout bannertool
+      uses: actions/checkout@v2
+      with:
+        repository: 3DSGuy/Project_CTR
+        
+    - name: Build ${{ matrix.prog }}
+      run: |
+        cd ${{ matrix.prog }}
+        make ${{ matrix.makeArgs }}
+      
+    - name: Upload ${{ matrix.prog }} binary artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.prog }}
+        path: ${{ matrix.prog }}/${{ matrix.prog }}
+    
+  job_build:
+    runs-on: ubuntu-latest
+    needs: |
+      job_bannertool
+      job_ctrtools
+    container:
+      image: 'devkitpro/devkitarm'
+
+    steps:
+    - name: Checkout 3ds-lvgl
+      uses: actions/checkout@v2
+      
+    - name: Download bannertool artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: bannertool-artifact
+        path: bannertool.elf
+        
+    - name: Download ctrtool artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ctrtool
+        path: ctrtool/ctrtool
+        
+    - name: Download makerom artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: makerom
+        path: makerom/makerom
+        
+    - name: Restore artifact file permissions and install
+      run: |
+        chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
+        sudo cp bannertool.elf ctrtool/ctrtool makerom/makerom /usr/bin/
+        
+    - name: Build
+      run: make PLATFORM=3DS BUILD=DEBUG
+      
+    - name: Upload build output
+      uses: actions/upload-artifact@v2
+      with:
+        name: 3DS-artifact
+        path: |
           README.md
           out/*.3dsx
           out/*.3ds
