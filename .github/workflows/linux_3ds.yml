@@ -97,10 +97,15 @@ jobs:
       
     - name: Install GNU Make
       run: choco install make
-      
-    - name: Build
-      run: make PLATFORM=MSVC BUILD=RELEASE
+
+    - name: Prepare dependencies
       shell: cmd
+      run: |
+        ext/MSVC_DEPS.exe -o"ext" -y
+        COPY ext/lib_%VSCMD_ARG_TGT_ARCH%/*.dll ./out/
+
+    - name: Build
+      run: make PLATFORM=MSVC BUILD=RELEASE UNUSED=DNU
       
     - name: Upload build output
       uses: actions/upload-artifact@v2
