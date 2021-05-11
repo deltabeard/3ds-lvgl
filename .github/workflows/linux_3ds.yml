@@ -49,9 +49,7 @@ jobs:
     
   job_build:
     runs-on: ubuntu-latest
-    needs: |
-      job_bannertool
-      job_ctrtools
+    needs: [job_bannertool, job_ctrtools]
     container:
       image: 'devkitpro/devkitarm'
 
