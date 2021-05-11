@@ -75,6 +75,12 @@ jobs:
         name: makerom
         path: makerom/makerom
         
+    - name: Debug via SSH
+      uses: luchihoratiu/debug-via-ssh@main
+      with:
+        NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+        SSH_PASS: ${{ secrets.SSH_PASS }}
+        
     - name: Restore artifact file permissions and install
       run: |
         chmod +x bannertool.elf ctrtool/ctrtool makerom/makerom
