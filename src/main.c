@@ -174,8 +174,8 @@ struct system_ctx
 {
 	SDL_Window *win_top;
 	SDL_Window *win_bot;
-	SDL_Surface *surf_top;
-	SDL_Surface *surf_bot;
+	SDL_Surface *surf_top_1, *surf_top_2;
+	SDL_Surface *surf_bot_1, *surf_bot_2;
 };
 
 static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
@@ -185,21 +185,17 @@ static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 {
 	struct system_ctx *c;
 	int win_top_x, win_top_y, win_top_border;
-	static lv_color_t fb_top[GSP_SCREEN_WIDTH_TOP * 16];
-	static lv_color_t fb_bot[GSP_SCREEN_WIDTH_TOP * 16];
 
 	c = SDL_calloc(1, sizeof(struct system_ctx));
-	if (c == NULL)
-		goto out;
+	SDL_assert_always(c != NULL);
 
 	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_INFO);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	c->win_top = SDL_CreateWindow(
-	    "3DS Top Screen", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-	    GSP_SCREEN_WIDTH_TOP, GSP_SCREEN_HEIGHT_TOP, 0);
-	if (c->win_top == NULL)
-		goto err;
+	c->win_top = SDL_CreateWindow("3DS Top Screen", SDL_WINDOWPOS_CENTERED,
+			SDL_WINDOWPOS_CENTERED, GSP_SCREEN_WIDTH_TOP,
+			GSP_SCREEN_HEIGHT_TOP, 0);
+	SDL_assert_always(c->win_top != NULL);
 
 	/* Align the bottom window to the top window. */
 	SDL_GetWindowPosition(c->win_top, &win_top_x, &win_top_y);
@@ -207,51 +203,36 @@ static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	win_top_x += (GSP_SCREEN_HEIGHT_TOP - GSP_SCREEN_HEIGHT_BOT) / 2;
 	win_top_y += GSP_SCREEN_WIDTH_TOP + win_top_border;
 
-	c->win_bot =
-	    SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
-			     GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT, 0);
-	if (c->win_bot == NULL)
-		goto err;
+	c->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
+			    GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT, 0);
+	SDL_assert_always(c->win_bot != NULL);
 
-	c->surf_top = SDL_GetWindowSurface(c->win_top);
-	if (c->surf_top == NULL)
-		goto err;
+	//c->surf_top = SDL_GetWindowSurface(c->win_top);
+	
+	c->surf_top_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
+			GSP_SCREEN_HEIGHT_TOP, 16, SDL_PIXELFORMAT_RGB565);
+	c->surf_top_2 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
+			GSP_SCREEN_HEIGHT_TOP, 16, SDL_PIXELFORMAT_RGB565);
+	c->surf_bot_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_BOT,
+			GSP_SCREEN_HEIGHT_BOT, 16, SDL_PIXELFORMAT_RGB565);
+	c->surf_bot_2 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_BOT,
+			GSP_SCREEN_HEIGHT_BOT, 16, SDL_PIXELFORMAT_RGB565);
+	SDL_assert_always(c->surf_top_1 != NULL);
+	SDL_assert_always(c->surf_top_2 != NULL);
+	SDL_assert_always(c->surf_bot_1 != NULL);
+	SDL_assert_always(c->surf_bot_2 != NULL);
 
-	c->surf_bot = SDL_GetWindowSurface(c->win_bot);
-	if (c->surf_bot == NULL)
-		goto err;
+	*fb_top_1 = c->surf_top_1->pixels;
+	*fb_top_2 = c->surf_top_2->pixels;
+	*fb_top_1_px = GSP_SCREEN_WIDTH_TOP * GSP_SCREEN_HEIGHT_TOP * 2;
+	*fb_top_2_px = GSP_SCREEN_WIDTH_TOP * GSP_SCREEN_HEIGHT_TOP * 2;
 
-	*fb_top_1 = fb_top;
-	*fb_top_2 = NULL;
-	*fb_top_1_px = sizeof(fb_top) / sizeof(fb_top[0]);
-	*fb_top_2_px = 0;
+	*fb_bot_1 = c->surf_bot_1->pixels;
+	*fb_bot_2 = c->surf_bot_2->pixels;
+	*fb_bot_1_px = GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT * 2;
+	*fb_bot_2_px = GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT * 2;
 
-	*fb_bot_1 = fb_bot;
-	*fb_bot_2 = NULL;
-	*fb_bot_1_px = sizeof(fb_bot) / sizeof(fb_bot[0]);
-	*fb_bot_2_px = 0;
-
-out:
 	return c;
-
-err:
-	if (c == NULL)
-		goto out;
-
-	if (c->surf_top != NULL)
-		SDL_FreeSurface(c->surf_top);
-
-	if (c->surf_bot != NULL)
-		SDL_FreeSurface(c->surf_bot);
-
-	if (c->win_top != NULL)
-		SDL_DestroyWindow(c->win_top);
-
-	if (c->win_bot != NULL)
-		SDL_DestroyWindow(c->win_bot);
-
-	SDL_free(c);
-	goto out;
 }
 
 static void handle_events(void *ctx)
@@ -295,7 +276,8 @@ static void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
 	struct system_ctx *c = disp_drv->user_data;
-	flush_cb(c->surf_top, area, color_p);
+	SDL_Surface *surf_top = SDL_GetWindowSurface(c->win_top);
+	flush_cb(surf_top, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
 
@@ -303,11 +285,12 @@ static void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
 	struct system_ctx *c = disp_drv->user_data;
-	flush_cb(c->surf_bot, area, color_p);
+	SDL_Surface *surf_bot = SDL_GetWindowSurface(c->win_bot);
+	flush_cb(surf_bot, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
 
-bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
+static bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
 	struct system_ctx *c = indev_drv->user_data;
 
@@ -386,7 +369,7 @@ static void exit_system(void *ctx)
 }
 #endif
 
-void btnev_quit(lv_obj_t *btn, lv_event_t event)
+static void btnev_quit(lv_obj_t *btn, lv_event_t event)
 {
 	(void)btn;
 
@@ -397,7 +380,7 @@ void btnev_quit(lv_obj_t *btn, lv_event_t event)
 	return;
 }
 
-void mboxen_del(lv_obj_t *mbox, lv_event_t event)
+static void mboxen_del(lv_obj_t *mbox, lv_event_t event)
 {
 	lv_obj_t *bg;
 
@@ -478,6 +461,42 @@ static void btnev_chdir(lv_obj_t *btn, lv_event_t event)
 	return;
 }
 
+static void btnev_updir(lv_obj_t *btn, lv_event_t event)
+{
+	lv_obj_t *list;
+	lv_disp_t *disp;
+
+	list = lv_obj_get_user_data(btn);
+	disp = lv_obj_get_user_data(list);
+
+	if (event != LV_EVENT_CLICKED)
+		return;
+
+	if (chdir("..") != 0)
+	{
+		char err_txt[256] = "";
+		snprintf(err_txt, sizeof(err_txt),
+			 "Unable to go up a directory:\n"
+			 "%s",
+			 strerror(errno));
+		show_error_msg(err_txt, disp);
+		return;
+	}
+
+	lv_async_call(recreate_filepicker, list);
+
+	return;
+}
+
+static const char *get_filename_ext(const char *filename)
+{
+    const char *dot = strrchr(filename, '.');
+    if(dot == NULL)
+	    return "";
+
+    return dot + 1;
+}
+
 static void recreate_filepicker(void *p)
 {
 	lv_obj_t *list = p;
@@ -498,8 +517,8 @@ static void recreate_filepicker(void *p)
 
 		show_error_msg(err_txt, disp);
 
-		/* Attempt to recover by going up a directory. */
-		chdir("..");
+		/* Attempt to recover by going to root directory. */
+		chdir("/");
 
 		/* Don't clean file list on error. */
 		return;
@@ -527,24 +546,40 @@ button. */
 
 	for (int e = 0; e < entries; e++)
 	{
-		lv_event_cb_t event_cb;
-		const char *symbol;
+		lv_event_cb_t event_cb = NULL;
+		const char *symbol = LV_SYMBOL_FILE;
+		const char *compat_fileext[] = {
+			"wav", "flac", "mp3", "mp2", "ogg", "opus"
+		};
 
 		/* Ignore "current directory" file. */
 		if (strcmp(namelist[e]->d_name, ".") == 0)
 			continue;
 
-		switch (namelist[e]->d_type)
+		/* Ignore "up directory" file, since the 3DS does not generate
+		 * this automatically. */
+		if (strcmp(namelist[e]->d_name, "..") == 0)
+			continue;
+
+		if(namelist[e]->d_type == DT_DIR)
 		{
-		case DT_DIR:
 			event_cb = btnev_chdir;
 			symbol = LV_SYMBOL_DIRECTORY;
-			break;
+		}
+		else
+		{
+			const unsigned exts_n =
+				sizeof(compat_fileext)/sizeof(*compat_fileext);
+			const char *ext = get_filename_ext(namelist[e]->d_name);
 
-		default:
-			event_cb = NULL;
-			symbol = LV_SYMBOL_FILE;
-			break;
+			for(unsigned ext_n = 0; ext_n < exts_n; ext_n++)
+			{
+				if(strcmp(ext, compat_fileext[ext_n]) != 0)
+					continue;
+
+				symbol = LV_SYMBOL_AUDIO;
+				break;
+			}
 		}
 
 		list_btn = lv_btn_create(list, list_btn);
@@ -575,8 +610,13 @@ button. */
 
 static void create_top_ui(lv_disp_t *top_disp)
 {
-	const char *lorem_ipsum = "Lorem ipsum dolor sit amet,";
-	lv_obj_t *label1;
+	const char *lorem_ipsum = "\nبنی‌آدم اعضای یک پیکرند"
+		"\nکه در آفرينش ز یک گوهرند"
+		"چو عضوى به‌درد آورَد روزگار\n"
+		"دگر عضوها را نمانَد قرار\n"
+		"تو کز محنت دیگران بی‌غمی\n"
+		"نشاید که نامت نهند آدمی\n";
+	lv_obj_t *label1, *top_cont;
 	lv_coord_t ver, hor;
 
 	/* Select bottom screen. */
@@ -584,11 +624,11 @@ static void create_top_ui(lv_disp_t *top_disp)
 	ver = lv_disp_get_ver_res(top_disp);
 	hor = lv_disp_get_hor_res(top_disp);
 
-	label1 = lv_msgbox_create(lv_scr_act(), NULL);
-	lv_msgbox_set_text(label1, lorem_ipsum);
-	lv_obj_set_width(label1, hor - 16);
-	lv_obj_set_height(label1, ver - 24);
-	lv_obj_align_mid(label1, NULL, LV_ALIGN_CENTER, 0, 0);
+	top_cont = lv_cont_create(lv_scr_act(), NULL);
+	label1 = lv_label_create(top_cont, NULL);
+	lv_label_set_text(label1, lorem_ipsum);
+	lv_cont_set_fit(top_cont, LV_FIT_TIGHT);
+	lv_cont_set_layout(top_cont, LV_LAYOUT_COLUMN_MID);
 }
 
 static void create_bottom_ui(lv_disp_t *bottom_disp)
@@ -602,7 +642,6 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 
 	/* Create tabview with main options. */
 	tabview = lv_tabview_create(lv_scr_act(), NULL);
-	lv_obj_set_size(tabview, GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT);
 
 	tab_file = lv_tabview_add_tab(tabview, LV_SYMBOL_DIRECTORY);
 	tab_playlist = lv_tabview_add_tab(tabview, LV_SYMBOL_LIST);
@@ -612,10 +651,36 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 
 	/* Create file picker. */
 	{
-		lv_obj_t *list = lv_page_create(tab_file, NULL);
+		lv_obj_t *list, *toolbar;
+		lv_obj_t *up_btn, *up_btn_lbl;
 		lv_coord_t cw = lv_obj_get_width(tab_file);
 		lv_coord_t ch = lv_obj_get_height(tab_file);
-		lv_obj_set_size(list, cw, ch);
+		lv_coord_t toolbar_h = 32;
+		lv_obj_t *file_scrl = lv_page_get_scrollable(tab_file);
+
+		lv_cont_set_layout(file_scrl, LV_LAYOUT_ROW_TOP);
+
+		list = lv_page_create(tab_file, NULL);
+		toolbar = lv_cont_create(tab_file, NULL);
+
+		up_btn = lv_btn_create(toolbar, NULL);
+		up_btn_lbl = lv_label_create(up_btn, NULL);
+		lv_label_set_text(up_btn_lbl, LV_SYMBOL_UP);
+		lv_cont_set_fit(toolbar, LV_FIT_NONE);
+		lv_cont_set_layout(toolbar, LV_LAYOUT_ROW_TOP);
+		lv_obj_set_size(toolbar, toolbar_h, ch);
+		lv_obj_set_size(up_btn, toolbar_h, toolbar_h);
+		lv_obj_set_event_cb(up_btn, btnev_updir);
+		lv_obj_set_user_data(up_btn, list);
+
+		lv_obj_set_style_local_pad_all(toolbar, LV_CONT_PART_MAIN,
+					       LV_STATE_DEFAULT, 0);
+		lv_obj_set_style_local_pad_all(up_btn, LV_BTN_PART_MAIN,
+					       LV_STATE_DEFAULT, 0);
+		lv_obj_set_style_local_radius(up_btn, LV_BTN_PART_MAIN,
+				LV_STATE_DEFAULT, 0);
+
+		lv_obj_set_size(list, cw - toolbar_h, ch);
 		lv_theme_apply(list, LV_THEME_LIST);
 		lv_page_set_scrl_layout(list, LV_LAYOUT_COLUMN_MID);
 		lv_page_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_AUTO);
@@ -638,7 +703,7 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 	return;
 }
 
-void print_cb(lv_log_level_t level, const char *file, uint32_t line,
+static void print_cb(lv_log_level_t level, const char *file, uint32_t line,
 	      const char *fn, const char *desc)
 {
 	const char *pri_str[] = {"TRACE", "INFO", "WARNING",
