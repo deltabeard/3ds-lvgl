@@ -79,10 +79,10 @@ jobs:
         name: 3ds-lvgl-output
         path: |
           README.md
-          out/*.3dsx
-          out/*.3ds
-          out/*.elf
-          out/*.cia
+          out/3DS_*/*.3dsx
+          out/3DS_*/*.3ds
+          out/3DS_*/*.cia
+          out/3DS_*/*.elf
           
   job_nt:
     name: Build 3DS-LVGL for Windows NT
@@ -112,5 +112,5 @@ jobs:
       with:
         name: 3ds-lvgl-output
         path: |
-          out/*.exe
-          out/*.dll
+          out/WINDOWS_*/*.exe
+          out/WINDOWS_*/*.dll

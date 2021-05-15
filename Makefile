@@ -62,6 +62,7 @@ ifeq ($(PLATFORM),MSVC)
 	CFLAGS	:= /nologo /utf-8 /W1 /Iinc /Iext\inc /FS /D_CRT_SECURE_NO_WARNINGS
 	LDFLAGS := /link /SUBSYSTEM:CONSOLE SDL2main.lib SDL2.lib shell32.lib /LIBPATH:ext\lib_$(VSCMD_ARG_TGT_ARCH)
 	EXE	:= $(NAME).exe
+	TARGET_FOLDER := $(strip out\WINDOWS_$(VSCMD_ARG_TGT_ARCH)\ )
 
 else ifeq ($(PLATFORM),3DS)
 #include $(DEVKITARM)/3ds_rules
@@ -75,11 +76,13 @@ else ifeq ($(PLATFORM),3DS)
 	CC	:= $(PREFIX)gcc
 	CXX	:= $(PREFIX)g++
 	EXE	:= $(NAME).3dsx $(NAME).3ds $(NAME).cia
+	ARCH	:= armv6k
+	TARGET_FOLDER := out/$(PLATFORM)_$(ARCH)/
 	OBJEXT	:= o
 	CFLAGS	:= -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -D__3DS__	\
 		-I$(DEVKITPRO)/libctru/include
 	LDFLAGS	= -specs=3dsx.specs -L$(DEVKITPRO)/libctru/lib -lctru
-	
+
 	PRODUCT_CODE	:= CTR-P-LVGL
 	UNIQUE_ID		:= 0xFF3CD
 	CATEGORY		:= Application
@@ -111,6 +114,8 @@ endif
 ifneq ($(.SHELLSTATUS),0)
 	err	:= $(error Unable to locate 'pkg-config' application)
 endif
+	ARCH	:= $(shell uname -m)
+	OS	:= $(shell uname -s)
 
 	# Default compiler options for GCC and Clang
 	CC	:= cc
@@ -119,6 +124,7 @@ endif
 	CFLAGS	:= -Wall -Wextra -D_DEFAULT_SOURCE $(shell pkg-config sdl2 --cflags)
 	LDFLAGS	:= $(shell pkg-config sdl2 --libs)
 	EXE	:= $(NAME).elf
+	TARGET_FOLDER := out/$(OS)_$(ARCH)/
 
 else
 	err := $(error Unsupported platform specified)
@@ -139,7 +145,6 @@ endif
 LICENSE := (C) $(AUTHOR). $(LICENSE_SPDX).
 GIT_VER := $(shell git describe --dirty --always --tags --long)
 
-
 SRCS := $(wildcard src/*.c) $(wildcard src/**/*.c) $(wildcard inc/lvgl/src/**/*.c)
 
 # If using del, use Windows style folder separator.
@@ -148,6 +153,9 @@ ifeq ($(RM),del)
 endif
 
 OBJS += $(SRCS:.c=.$(OBJEXT))
+
+MKDIR := $(shell mkdir $(TARGET_FOLDER))
+TARGET	+= $(addprefix $(TARGET_FOLDER),$(EXE))
 
 # Use a fallback git version string if build system does not have git.
 ifeq ($(GIT_VER),)
@@ -185,11 +193,8 @@ ifeq ($(CC)$(wildcard SDL2.dll),cl)
     UNUSED := $(shell $(EXPAND_CMD))
 
     # Copy SDL2.DLL to output EXE directory.
-    UNUSED := $(shell COPY ext\lib_$(VSCMD_ARG_TGT_ARCH)\*.dll .\out\)
+    UNUSED := $(shell COPY ext\lib_$(VSCMD_ARG_TGT_ARCH)\*.dll $(TARGET_FOLDER))
 endif
-
-# Add UI example application to target and output binaries to 'out' folder.
-TARGET += $(addprefix out$(BRCK),$(EXE))
 
 override CFLAGS += -Iinc -Iinc/lvgl -DBUILD=$(BUILD) $(EXTRA_CFLAGS)
 override LDFLAGS += $(EXTRA_LDFLAGS)
@@ -217,17 +222,17 @@ all: $(TARGET)
 	rc /nologo /DCOMPANY="$(COMPANY)" /DDESCRIPTION="$(DESCRIPTION)" \
 		/DLICENSE="$(LICENSE)" /DGIT_VER="$(GIT_VER)" \
 		/DNAME="$(NAME)" $^
-	
+
 # Nintendo 3DS rules for use with devkitARM
 %.3dsx: %.elf %.smdh
 	3dsxtool $< $@ --smdh=$(word 2,$^)
-	
+
 %.3ds: %.elf meta/banner.bnr meta/icon.icn
 	makerom -f cci -o $@ -elf $< -DAPP_ENCRYPTED=true $(MAKEROM_FLAGS)
 
 %.cia: %.elf meta/banner.bnr meta/icon.icn
 	makerom -f cia -o $@ -elf $< -DAPP_ENCRYPTED=false $(MAKEROM_FLAGS)
-	
+
 %.bnr: meta/banner.png meta/banner.wav
 	bannertool makebanner --image $(word 1,$^) --audio $(word 2,$^) --output $@
 

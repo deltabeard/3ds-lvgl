@@ -16,7 +16,7 @@
  *====================*/
 
 /* Maximal horizontal and vertical resolution to support by the library.*/
-#define LV_HOR_RES_MAX          (480)
+#define LV_HOR_RES_MAX          (400)
 #define LV_VER_RES_MAX          (320)
 
 /* Color depth:
@@ -357,16 +357,16 @@ typedef void * lv_indev_drv_user_data_t;            /*Type of user data in the i
 #define LV_USE_ASSERT_MEM       1
 
 /*Check the integrity of `lv_mem` after critical operations. (Slow)*/
-#define LV_USE_ASSERT_MEM_INTEGRITY       1
+#define LV_USE_ASSERT_MEM_INTEGRITY       0
 
 /* Check the strings.
  * Search for NULL, very long strings, invalid characters, and unnatural repetitions. (Slow)
  * If disabled `LV_USE_ASSERT_NULL` will be performed instead (if it's enabled) */
-#define LV_USE_ASSERT_STR       1
+#define LV_USE_ASSERT_STR       0
 
 /* Check NULL, the object's type and existence (e.g. not deleted). (Quite slow)
  * If disabled `LV_USE_ASSERT_NULL` will be performed instead (if it's enabled) */
-#define LV_USE_ASSERT_OBJ       1
+#define LV_USE_ASSERT_OBJ       0
 
 /*Check if the styles are properly initialized. (Fast)*/
 #define LV_USE_ASSERT_STYLE     1
