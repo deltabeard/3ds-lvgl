@@ -23,6 +23,8 @@
 #include <unistd.h>
 #endif
 
+ #include <noto_sans_14_common.h>
+
 #include <errno.h>
 #include <lvgl.h>
 #include <stdint.h>
@@ -208,7 +210,7 @@ static void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	SDL_assert_always(c->win_bot != NULL);
 
 	//c->surf_top = SDL_GetWindowSurface(c->win_top);
-	
+
 	c->surf_top_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
 			GSP_SCREEN_HEIGHT_TOP, 16, SDL_PIXELFORMAT_RGB565);
 	c->surf_top_2 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
@@ -594,7 +596,7 @@ button. */
 		label = lv_label_create(list_btn, label);
 		lv_obj_set_width(label, w - (lv_obj_get_width_margin(img) * 4));
 		lv_label_set_text(label, namelist[e]->d_name);
-		lv_label_set_long_mode(label, LV_LABEL_LONG_SROLL_CIRC);
+		lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
 		lv_obj_set_click(label, false);
 
 		lv_obj_set_event_cb(list_btn, event_cb);
@@ -753,8 +755,8 @@ int main(int argc, char *argv[])
 	lv_disp_drv_top.user_data = ctx;
 #ifdef __3DS__
 	lv_disp_drv_top.rotated = LV_DISP_ROT_90;
-	lv_disp_drv_top.sw_rotate = 1;
-        lv_disp_drv_top.hor_res = GSP_SCREEN_HEIGHT_TOP;
+	lv_disp_drv_top.sw_rotate = 0;
+	lv_disp_drv_top.hor_res = GSP_SCREEN_HEIGHT_TOP;
 	lv_disp_drv_top.ver_res = GSP_SCREEN_WIDTH_TOP;
 #else
 	lv_disp_drv_top.rotated = LV_DISP_ROT_90;

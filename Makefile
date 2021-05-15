@@ -77,7 +77,6 @@ else ifeq ($(PLATFORM),3DS)
 	EXE	:= $(NAME).3dsx $(NAME).3ds $(NAME).cia
 	OBJEXT	:= o
 	CFLAGS	:= -march=armv6k -mtune=mpcore -mfloat-abi=hard -mtp=soft -D__3DS__	\
-		-mword-relocations -fomit-frame-pointer -ffunction-sections		\
 		-I$(DEVKITPRO)/libctru/include
 	LDFLAGS	= -specs=3dsx.specs -L$(DEVKITPRO)/libctru/lib -lctru
 	
