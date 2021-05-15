@@ -42,7 +42,6 @@ static void recreate_filepicker(void *p);
 #define print_debug(x)                                                         \
 	fprintf(stderr, "DEBUG: %s+%d: %s\n", __func__, __LINE__, x)
 
-
 static void btnev_quit(lv_obj_t *btn, lv_event_t event)
 {
 	(void)btn;

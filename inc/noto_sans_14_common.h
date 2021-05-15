@@ -67531,3 +67531,4 @@ lv_font_t noto_sans_14_common = {
 /* clang-format on */
 
 #endif /*#if NOTO_SANS_14_COMMON*/
+
