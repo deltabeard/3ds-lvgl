@@ -182,7 +182,7 @@ endif
 # When compiling with MSVC, check if SDL2 has been expanded from prepared cab file.
 ifeq ($(CC)$(wildcard SDL2.dll),cl)
     $(info Preparing SDL2 development libraries)
-    EXPAND_CMD := ext\MSVC_DEPS.exe -o"ext" -y
+    EXPAND_CMD := expand -F:* -R .\ext\MSVC_DEPS.cab ext
     UNUSED := $(shell $(EXPAND_CMD))
 
     # Copy SDL2.DLL to output EXE directory.
