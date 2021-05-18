@@ -101,7 +101,7 @@ jobs:
     - name: Prepare dependencies
       shell: cmd
       run: |
-        ext\MSVC_DEPS.exe -o"ext" -y
+        EXPAND -F:* -R .\ext\MSVC_DEPS.cab ext
         COPY ext\lib_%VSCMD_ARG_TGT_ARCH%\*.dll .\out\
 
     - name: Build
