@@ -215,7 +215,7 @@ void _lv_disp_refr_task(lv_task_t * task)
                 /* With true double buffering the flushing should be only the address change of the
                  * current frame buffer. Wait until the address change is ready and copy the changed
                  * content to the other frame buffer (new active VDB) to keep the buffers synchronized*/
-                //while(vdb->flushing);
+                while(vdb->flushing);
 
                 lv_color_t * copy_buf = NULL;
 #if LV_USE_GPU_STM32_DMA2D

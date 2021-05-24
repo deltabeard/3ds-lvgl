@@ -95,6 +95,7 @@ typedef struct _lv_anim_t {
     /*Animation system use these - user shouldn't set*/
     uint8_t playback_now : 1; /**< Play back is in progress*/
     uint8_t run_round : 1;    /**< Indicates the animation has run in this round*/
+    uint8_t start_cb_called : 1;    /**< Indicates that `start_cb` was already called`*/
     uint32_t time_orig;
 } lv_anim_t;
 
@@ -414,8 +415,6 @@ lv_anim_value_t lv_anim_path_bounce(const lv_anim_path_t * path, const lv_anim_t
  * @return the current value to set
  */
 lv_anim_value_t lv_anim_path_step(const lv_anim_path_t * path, const lv_anim_t * a);
-
-lv_anim_value_t lv_anim_path_ease_in_quint(const lv_anim_path_t *path, const lv_anim_t *a);
 
 /**********************
  *   GLOBAL VARIABLES

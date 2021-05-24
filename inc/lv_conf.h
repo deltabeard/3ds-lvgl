@@ -66,7 +66,7 @@
 typedef int32_t lv_coord_t;
 
 /* Maximum buffer size to allocate for rotation. Only used if software rotation is enabled. */
-#define LV_DISP_ROT_MAX_BUF  (400U * 320U * 2U)
+#define LV_DISP_ROT_MAX_BUF  (10U * 1024U * 2U)
 
 /*=========================
    Memory manager settings
