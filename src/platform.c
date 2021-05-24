@@ -60,15 +60,14 @@ void render_present(void *ctx)
 
 static void draw_pixels(lv_color_t *restrict dst, const lv_color_t *restrict src, const lv_area_t *area, u16 w)
 {
-	int32_t x, y;
-	for (y = area->y1; y <= area->y2; y++)
+	for (lv_coord_t y = area->y1; y <= area->y2; y++)
 	{
-		for (x = area->x1; x <= area->x2; x++)
-		{
-			lv_color_t *dst_p = dst + (w * y) + x;
-			*dst_p = *src;
-			src++;
-		}
+		lv_color_t *dst_p = dst + (w * y) + area->x1;
+		size_t len = (area->x2 - area->x1) + 1;
+		size_t sz = len * sizeof(lv_color_t);
+
+		memcpy(dst_p, src, sz);
+		src += len;
 	}
 }
 
