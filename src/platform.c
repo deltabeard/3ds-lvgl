@@ -130,10 +130,10 @@ int exit_requested(void *ctx)
 
 struct system_ctx
 {
-	SDL_Window *win_top;
-	SDL_Window *win_bot;
-	SDL_Surface *surf_top_1, *surf_top_2;
-	SDL_Surface *surf_bot_1, *surf_bot_2;
+	SDL_Window *win_top, *win_bot;
+	SDL_Renderer *ren_top, *ren_bot;
+	SDL_Texture *tex_top_1, *tex_top_2;
+	SDL_Texture *tex_bot_1, *tex_bot_2;
 };
 
 void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
@@ -151,9 +151,11 @@ void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	SDL_Init(SDL_INIT_EVERYTHING);
 
 	c->win_top = SDL_CreateWindow("3DS Top Screen", SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED, GSP_SCREEN_WIDTH_TOP,
-			GSP_SCREEN_HEIGHT_TOP, 0);
+			SDL_WINDOWPOS_CENTERED, NATURAL_SCREEN_WIDTH_TOP,
+			NATURAL_SCREEN_HEIGHT_TOP, 0);
 	SDL_assert_always(c->win_top != NULL);
+	c->ren_top = SDL_CreateRenderer(c->win_top, -1, SDL_RENDERER_ACCELERATED);
+	SDL_assert_always(c->ren_top != NULL);
 
 	/* Align the bottom window to the top window. */
 	SDL_GetWindowPosition(c->win_top, &win_top_x, &win_top_y);
@@ -162,9 +164,20 @@ void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	win_top_y += GSP_SCREEN_WIDTH_TOP + win_top_border;
 
 	c->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
-			    GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT, 0);
+			    NATURAL_SCREEN_WIDTH_BOT, NATURAL_SCREEN_HEIGHT_BOT,
+			    0);
 	SDL_assert_always(c->win_bot != NULL);
+	c->ren_top = SDL_CreateRenderer(c->win_top, -1, SDL_RENDERER_ACCELERATED);
+	SDL_assert_always(c->ren_top != NULL);
 
+	c->tex_top_1 = SDL_CreateTexture(c->ren_top,SDL_PIXELFORMAT_RGB565,
+                                SDL_TEXTUREACCESS_STREAMING,
+				NATURAL_SCREEN_WIDTH_TOP,
+                                NATURAL_SCREEN_HEIGHT_TOP);
+	c->tex_top_2 = SDL_CreateTexture(c->ren_top,SDL_PIXELFORMAT_RGB565,
+                                SDL_TEXTUREACCESS_STREAMING,
+				NATURAL_SCREEN_WIDTH_TOP,
+                                NATURAL_SCREEN_HEIGHT_TOP);
 	//c->surf_top = SDL_GetWindowSurface(c->win_top);
 
 	c->surf_top_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
