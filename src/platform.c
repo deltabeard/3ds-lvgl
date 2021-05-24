@@ -7,7 +7,6 @@
  * USE OF THIS SOFTWARE.
  */
 
-#include <noto_sans_14_common.h>
 #include <lvgl.h>
 #include <platform.h>
 
@@ -20,10 +19,7 @@ int exit_requested(void *ctx)
 	return !aptMainLoop();
 }
 
-void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
-			 lv_color_t **fb_top_2, uint32_t *fb_top_2_px,
-			 lv_color_t **fb_bot_1, uint32_t *fb_bot_1_px,
-			 lv_color_t **fb_bot_2, uint32_t *fb_bot_2_px)
+void *init_system(void)
 {
 	void *c = NULL;
 	u16 width, height;
@@ -132,14 +128,9 @@ struct system_ctx
 {
 	SDL_Window *win_top;
 	SDL_Window *win_bot;
-	SDL_Surface *surf_top_1, *surf_top_2;
-	SDL_Surface *surf_bot_1, *surf_bot_2;
 };
 
-void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
-			 lv_color_t **fb_top_2, uint32_t *fb_top_2_px,
-			 lv_color_t **fb_bot_1, uint32_t *fb_bot_1_px,
-			 lv_color_t **fb_bot_2, uint32_t *fb_bot_2_px)
+void *init_system(void)
 {
 	struct system_ctx *c;
 	int win_top_x, win_top_y, win_top_border;
@@ -164,31 +155,6 @@ void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
 	c->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
 			    GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT, 0);
 	SDL_assert_always(c->win_bot != NULL);
-
-	//c->surf_top = SDL_GetWindowSurface(c->win_top);
-
-	c->surf_top_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
-			GSP_SCREEN_HEIGHT_TOP, 16, SDL_PIXELFORMAT_RGB565);
-	c->surf_top_2 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_TOP,
-			GSP_SCREEN_HEIGHT_TOP, 16, SDL_PIXELFORMAT_RGB565);
-	c->surf_bot_1 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_BOT,
-			GSP_SCREEN_HEIGHT_BOT, 16, SDL_PIXELFORMAT_RGB565);
-	c->surf_bot_2 = SDL_CreateRGBSurfaceWithFormat(0, GSP_SCREEN_WIDTH_BOT,
-			GSP_SCREEN_HEIGHT_BOT, 16, SDL_PIXELFORMAT_RGB565);
-	SDL_assert_always(c->surf_top_1 != NULL);
-	SDL_assert_always(c->surf_top_2 != NULL);
-	SDL_assert_always(c->surf_bot_1 != NULL);
-	SDL_assert_always(c->surf_bot_2 != NULL);
-
-	*fb_top_1 = c->surf_top_1->pixels;
-	*fb_top_2 = c->surf_top_2->pixels;
-	*fb_top_1_px = GSP_SCREEN_WIDTH_TOP * GSP_SCREEN_HEIGHT_TOP * 2;
-	*fb_top_2_px = GSP_SCREEN_WIDTH_TOP * GSP_SCREEN_HEIGHT_TOP * 2;
-
-	*fb_bot_1 = c->surf_bot_1->pixels;
-	*fb_bot_2 = c->surf_bot_2->pixels;
-	*fb_bot_1_px = GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT * 2;
-	*fb_bot_2_px = GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT * 2;
 
 	return c;
 }

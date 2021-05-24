@@ -12,10 +12,7 @@
 #define SCREEN_PIXELS_BOT (GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT)
 
 /* Declerations for platform specific functions. */
-void *init_system(lv_color_t **fb_top_1, uint32_t *fb_top_1_px,
-			 lv_color_t **fb_top_2, uint32_t *fb_top_2_px,
-			 lv_color_t **fb_bot_1, uint32_t *fb_bot_1_px,
-			 lv_color_t **fb_bot_2, uint32_t *fb_bot_2_px);
+void *init_system(void);
 void handle_events(void *ctx);
 void render_present(void *ctx);
 void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,

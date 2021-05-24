@@ -33,6 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define BUF_PX_SIZE (GSP_SCREEN_WIDTH_TOP * 64)
 static bool quit = false;
 
 static void show_error_msg(const char *msg, lv_disp_t *disp);
@@ -406,17 +407,13 @@ int main(int argc, char *argv[])
 	lv_disp_buf_t lv_disp_buf_top, lv_disp_buf_bot;
 	lv_disp_drv_t lv_disp_drv_top, lv_disp_drv_bot;
 	lv_disp_t *lv_disp_top, *lv_disp_bot;
-
-	lv_color_t *fb_top_1, *fb_top_2;
-	lv_color_t *fb_bot_1, *fb_bot_2;
-	uint32_t fb_top_1_px, fb_top_2_px, fb_bot_1_px, fb_bot_2_px;
+	static lv_color_t top_buf[BUF_PX_SIZE];
+	static lv_color_t bot_buf[BUF_PX_SIZE];
 
 	(void)argc;
 	(void)argv;
 
-	ctx = init_system(&fb_top_1, &fb_top_1_px, &fb_top_2, &fb_top_2_px,
-			  &fb_bot_1, &fb_bot_1_px, &fb_bot_2, &fb_bot_2_px);
-
+	ctx = init_system();
 	if (ctx == NULL)
 	{
 		print_fatal("Unable to initialise system");
@@ -429,8 +426,8 @@ int main(int argc, char *argv[])
 	lv_init();
 	lv_log_register_print_cb(print_cb);
 
-	lv_disp_buf_init(&lv_disp_buf_top, fb_top_1, fb_top_2, fb_top_1_px);
-	lv_disp_buf_init(&lv_disp_buf_bot, fb_bot_1, fb_bot_2, fb_bot_1_px);
+	lv_disp_buf_init(&lv_disp_buf_top, top_buf, NULL, BUF_PX_SIZE);
+	lv_disp_buf_init(&lv_disp_buf_bot, bot_buf, NULL, BUF_PX_SIZE);
 
 	lv_disp_drv_init(&lv_disp_drv_top);
 	lv_disp_drv_top.buffer = &lv_disp_buf_top;
@@ -442,8 +439,8 @@ int main(int argc, char *argv[])
 	lv_disp_drv_top.hor_res = GSP_SCREEN_HEIGHT_TOP;
 	lv_disp_drv_top.ver_res = GSP_SCREEN_WIDTH_TOP;
 #else
-	lv_disp_drv_top.rotated = LV_DISP_ROT_90;
-	lv_disp_drv_top.sw_rotate = 1;
+	lv_disp_drv_top.rotated = 0;
+	lv_disp_drv_top.sw_rotate = 0;
 	lv_disp_drv_top.hor_res = GSP_SCREEN_WIDTH_TOP;
 	lv_disp_drv_top.ver_res = GSP_SCREEN_HEIGHT_TOP;
 #endif
@@ -459,8 +456,8 @@ int main(int argc, char *argv[])
 	lv_disp_drv_bot.hor_res = GSP_SCREEN_HEIGHT_BOT;
 	lv_disp_drv_bot.ver_res = GSP_SCREEN_WIDTH_BOT;
 #else
-	lv_disp_drv_bot.rotated = LV_DISP_ROT_90;
-	lv_disp_drv_bot.sw_rotate = 1;
+	lv_disp_drv_bot.rotated = 0;
+	lv_disp_drv_bot.sw_rotate = 0;
 	lv_disp_drv_bot.hor_res = GSP_SCREEN_WIDTH_BOT;
 	lv_disp_drv_bot.ver_res = GSP_SCREEN_HEIGHT_BOT;
 #endif
