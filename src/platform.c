@@ -27,27 +27,9 @@ void *init_system(void)
 	/* This stops scandir() from working. */
 	// consoleDebugInit(debugDevice_SVC);
 
-	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, true);
-	gfxSetDoubleBuffering(GFX_TOP, true);
-	gfxSetDoubleBuffering(GFX_BOTTOM, true);
-
-	*fb_top_1 =
-	    (lv_color_t *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &width, &height);
-	*fb_top_1_px = width * height;
-	/* Get second buffer for screen. */
-	gfxScreenSwapBuffers(GFX_TOP, false);
-	*fb_top_2 =
-	    (lv_color_t *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &width, &height);
-	*fb_top_2_px = width * height;
-
-	*fb_bot_1 = (lv_color_t *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT,
-						    &width, &height);
-	*fb_bot_1_px = width * height;
-	/* Get second buffer for screen. */
-	gfxScreenSwapBuffers(GFX_BOTTOM, false);
-	*fb_bot_2 = (lv_color_t *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT,
-						    &width, &height);
-	*fb_bot_2_px = width * height;
+	gfxInit(GSP_RGB565_OES, GSP_RGB565_OES, false);
+	gfxSetDoubleBuffering(GFX_TOP, false);
+	gfxSetDoubleBuffering(GFX_BOTTOM, false);
 
 	c = c - 1;
 
@@ -76,10 +58,27 @@ void render_present(void *ctx)
 	gspWaitForVBlank();
 }
 
+static void draw_pixels(lv_color_t *restrict dst, const lv_color_t *restrict src, const lv_area_t *area, u16 w)
+{
+	int32_t x, y;
+	for (y = area->y1; y <= area->y2; y++)
+	{
+		for (x = area->x1; x <= area->x2; x++)
+		{
+			lv_color_t *dst_p = dst + (w * y) + x;
+			*dst_p = *src;
+			src++;
+		}
+	}
+}
+
 void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
 	struct system_ctx *c = disp_drv->user_data;
+	u16 w;
+	lv_color_t *fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &w, NULL);
+	draw_pixels(fb, color_p, area, w);
 	lv_disp_flush_ready(disp_drv);
 }
 
@@ -87,6 +86,9 @@ void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
 	struct system_ctx *c = disp_drv->user_data;
+	u16 w;
+	lv_color_t *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &w, NULL);
+	draw_pixels(fb, color_p, area, w);
 	lv_disp_flush_ready(disp_drv);
 }
 
@@ -141,9 +143,9 @@ void *init_system(void)
 	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_INFO);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	c->win_top = SDL_CreateWindow("3DS Top Screen", SDL_WINDOWPOS_CENTERED,
-			SDL_WINDOWPOS_CENTERED, GSP_SCREEN_WIDTH_TOP,
-			GSP_SCREEN_HEIGHT_TOP, 0);
+	c->win_top = SDL_CreateWindow("3DS Top Screen",
+		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+		NATURAL_SCREEN_WIDTH_TOP, NATURAL_SCREEN_HEIGHT_TOP, 0);
 	SDL_assert_always(c->win_top != NULL);
 
 	/* Align the bottom window to the top window. */
@@ -153,7 +155,8 @@ void *init_system(void)
 	win_top_y += GSP_SCREEN_WIDTH_TOP + win_top_border;
 
 	c->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
-			    GSP_SCREEN_WIDTH_BOT, GSP_SCREEN_HEIGHT_BOT, 0);
+				      NATURAL_SCREEN_WIDTH_BOT,
+				      NATURAL_SCREEN_HEIGHT_BOT, 0);
 	SDL_assert_always(c->win_bot != NULL);
 
 	return c;

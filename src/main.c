@@ -434,15 +434,15 @@ int main(int argc, char *argv[])
 	lv_disp_drv_top.flush_cb = flush_top_cb;
 	lv_disp_drv_top.user_data = ctx;
 #ifdef __3DS__
-	lv_disp_drv_top.rotated = LV_DISP_ROT_90;
+	lv_disp_drv_top.rotated = LV_DISP_ROT_270;
 	lv_disp_drv_top.sw_rotate = 1;
-	lv_disp_drv_top.hor_res = GSP_SCREEN_HEIGHT_TOP;
-	lv_disp_drv_top.ver_res = GSP_SCREEN_WIDTH_TOP;
+	lv_disp_drv_top.hor_res = GSP_SCREEN_WIDTH_TOP;
+	lv_disp_drv_top.ver_res = GSP_SCREEN_HEIGHT_TOP;
 #else
 	lv_disp_drv_top.rotated = 0;
 	lv_disp_drv_top.sw_rotate = 0;
-	lv_disp_drv_top.hor_res = GSP_SCREEN_WIDTH_TOP;
-	lv_disp_drv_top.ver_res = GSP_SCREEN_HEIGHT_TOP;
+	lv_disp_drv_top.hor_res = NATURAL_SCREEN_WIDTH_TOP;
+	lv_disp_drv_top.ver_res = NATURAL_SCREEN_HEIGHT_TOP;
 #endif
 	lv_disp_top = lv_disp_drv_register(&lv_disp_drv_top);
 
@@ -451,15 +451,15 @@ int main(int argc, char *argv[])
 	lv_disp_drv_bot.flush_cb = flush_bot_cb;
 	lv_disp_drv_bot.user_data = ctx;
 #ifdef __3DS__
-	lv_disp_drv_bot.rotated = LV_DISP_ROT_90;
+	lv_disp_drv_bot.rotated = LV_DISP_ROT_270;
 	lv_disp_drv_bot.sw_rotate = 1;
-	lv_disp_drv_bot.hor_res = GSP_SCREEN_HEIGHT_BOT;
-	lv_disp_drv_bot.ver_res = GSP_SCREEN_WIDTH_BOT;
+	lv_disp_drv_bot.hor_res = GSP_SCREEN_WIDTH_BOT;
+	lv_disp_drv_bot.ver_res = GSP_SCREEN_HEIGHT_BOT;
 #else
 	lv_disp_drv_bot.rotated = 0;
 	lv_disp_drv_bot.sw_rotate = 0;
-	lv_disp_drv_bot.hor_res = GSP_SCREEN_WIDTH_BOT;
-	lv_disp_drv_bot.ver_res = GSP_SCREEN_HEIGHT_BOT;
+	lv_disp_drv_bot.hor_res = NATURAL_SCREEN_WIDTH_BOT;
+	lv_disp_drv_bot.ver_res = NATURAL_SCREEN_HEIGHT_BOT;
 #endif
 	lv_disp_bot = lv_disp_drv_register(&lv_disp_drv_bot);
 
