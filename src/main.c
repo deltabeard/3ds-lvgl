@@ -14,7 +14,7 @@
 #include <SDL.h>
 #endif
 
-#ifdef _WIN32
+#ifdef _MSC_VER
 #include <direct.h>
 #include <dirent_port.h>
 #define chdir _chdir
@@ -142,12 +142,30 @@ static void btnev_updir(lv_obj_t *btn, lv_event_t event)
 {
 	lv_obj_t *list;
 	lv_disp_t *disp;
+#ifdef _MSC_VER
+	char buf[] = "C:\\";
+#else
+	char buf[32];
+#endif
 
 	list = lv_obj_get_user_data(btn);
 	disp = lv_obj_get_user_data(list);
 
 	if (event != LV_EVENT_CLICKED)
 		return;
+
+	/* Check if we are in the filesystem root directory. */
+	if(getcwd(buf, sizeof(buf)) != NULL &&
+#ifdef _MSC_VER
+			buf[2] == '\\'
+#else
+			strcmp(buf, "/") == 0
+#endif
+		)
+	{
+		/* If already in the root directory, don't go up a directory. */
+		return;
+	}
 
 	if (chdir("..") != 0)
 	{
@@ -187,10 +205,13 @@ static void recreate_filepicker(void *p)
 	entries = scandir(".", &namelist, NULL, alphasort);
 	if (entries == -1)
 	{
-		char err_txt[256] = "";
+		char err_txt[512] = "";
+		char buf[PATH_MAX];
 
 		snprintf(err_txt, sizeof(err_txt),
-			 "Unable to scan directory: %s", strerror(errno));
+			 "Unable to scan '%s':\n%s",
+			 getcwd(buf, sizeof(buf)) != NULL ? buf : "directory",
+			 strerror(errno));
 
 		show_error_msg(err_txt, disp);
 
