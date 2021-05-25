@@ -232,7 +232,7 @@ static void recreate_filepicker(void *p)
 		lv_layout_t scrl_layout = lv_cont_get_layout(scrl);
 
 		/* Do not re-fit all the buttons on the removable of each
-button. */
+		 * button. */
 		lv_cont_set_fit(scrl, LV_FIT_NONE);
 		lv_cont_set_layout(scrl, LV_LAYOUT_OFF);
 		lv_page_clean(list);
@@ -357,7 +357,6 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 	/* Create file picker. */
 	{
 		lv_obj_t *list, *toolbar;
-		lv_obj_t *up_btn, *up_btn_lbl;
 		lv_coord_t cw = lv_obj_get_width(tab_file);
 		lv_coord_t ch = lv_obj_get_height(tab_file);
 		lv_coord_t toolbar_h = 32;
@@ -369,23 +368,38 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 		toolbar = lv_cont_create(tab_file, NULL);
 
 		lv_obj_set_state(toolbar, LV_STATE_DISABLED);
-
-		up_btn = lv_btn_create(toolbar, NULL);
-		up_btn_lbl = lv_label_create(up_btn, NULL);
-		lv_label_set_text(up_btn_lbl, LV_SYMBOL_UP);
 		lv_cont_set_fit(toolbar, LV_FIT_NONE);
-		lv_cont_set_layout(toolbar, LV_LAYOUT_ROW_TOP);
+		lv_cont_set_layout(toolbar, LV_LAYOUT_COLUMN_LEFT);
 		lv_obj_set_size(toolbar, toolbar_h, ch);
-		lv_obj_set_size(up_btn, toolbar_h, toolbar_h);
-		lv_obj_set_event_cb(up_btn, btnev_updir);
-		lv_obj_set_user_data(up_btn, list);
+		lv_obj_set_style_local_pad_all(
+			    toolbar, LV_CONT_PART_MAIN, LV_STATE_DEFAULT, 0);
+		lv_obj_set_style_local_pad_inner(toolbar,
+				LV_CONT_PART_MAIN, LV_STATE_DEFAULT, 0);
 
-		lv_obj_set_style_local_pad_all(toolbar, LV_CONT_PART_MAIN,
-					       LV_STATE_DEFAULT, 0);
-		lv_obj_set_style_local_pad_all(up_btn, LV_BTN_PART_MAIN,
-					       LV_STATE_DEFAULT, 0);
-		lv_obj_set_style_local_radius(up_btn, LV_BTN_PART_MAIN,
-				LV_STATE_DEFAULT, 0);
+		/* Add buttons to toolbar. */
+		{
+			lv_obj_t *btn, *btn_lbl;
+			btn = lv_btn_create(toolbar, NULL);
+			btn_lbl = lv_label_create(btn, NULL);
+			lv_label_set_text(btn_lbl, LV_SYMBOL_UP);
+			lv_obj_set_size(btn, toolbar_h, toolbar_h);
+			lv_obj_set_event_cb(btn, btnev_updir);
+			lv_obj_set_user_data(btn, list);
+
+			btn = lv_btn_create(toolbar, NULL);
+			btn_lbl = lv_label_create(btn, NULL);
+			lv_label_set_text(btn_lbl, LV_SYMBOL_PLUS);
+			lv_obj_set_size(btn, toolbar_h, toolbar_h);
+			//lv_obj_set_event_cb(btn, btnev_updir);
+			lv_obj_set_user_data(btn, list);
+
+			btn = lv_btn_create(toolbar, NULL);
+			btn_lbl = lv_label_create(btn, NULL);
+			lv_label_set_text(btn_lbl, LV_SYMBOL_PLAY);
+			lv_obj_set_size(btn, toolbar_h, toolbar_h);
+			//lv_obj_set_event_cb(btn, btnev_updir);
+			lv_obj_set_user_data(btn, list);
+		}
 
 		lv_obj_set_size(list, cw - toolbar_h, ch);
 		lv_theme_apply(list, LV_THEME_LIST);
