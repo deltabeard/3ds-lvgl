@@ -265,7 +265,6 @@ static void basic_init(void)
     lv_style_set_transition_prop_5(&styles->bg_click, LV_STATE_DEFAULT, LV_STYLE_BG_COLOR);
 
     lv_style_reset(&styles->btn);
-    lv_style_set_radius(&styles->btn, LV_STATE_DEFAULT, LV_RADIUS_CIRCLE);
     lv_style_set_bg_opa(&styles->btn, LV_STATE_DEFAULT, LV_OPA_COVER);
     lv_style_set_bg_color(&styles->btn, LV_STATE_DEFAULT, COLOR_BTN);
     lv_style_set_bg_color(&styles->btn, LV_STATE_PRESSED, COLOR_BTN_PR);
@@ -696,7 +695,6 @@ static void page_init(void)
     lv_style_reset(&styles->sb);
     lv_style_set_bg_opa(&styles->sb, LV_STATE_DEFAULT, LV_OPA_COVER);
     lv_style_set_bg_color(&styles->sb, LV_STATE_DEFAULT, (IS_LIGHT ? lv_color_hex(0xcccfd1) : lv_color_hex(0x777f85)));
-    lv_style_set_radius(&styles->sb, LV_STATE_DEFAULT, LV_RADIUS_CIRCLE);
     lv_style_set_size(&styles->sb, LV_STATE_DEFAULT, LV_DPX(7));
     lv_style_set_pad_right(&styles->sb, LV_STATE_DEFAULT,  LV_DPX(7));
     lv_style_set_pad_bottom(&styles->sb, LV_STATE_DEFAULT,  LV_DPX(7));
@@ -866,16 +864,16 @@ static void tabview_win_shared_init(void)
     lv_style_set_bg_color(&styles->tabview_btns_bg, LV_STATE_DEFAULT, COLOR_BG);
     lv_style_set_text_color(&styles->tabview_btns_bg, LV_STATE_DEFAULT, COLOR_SCR_TEXT);
     lv_style_set_image_recolor(&styles->tabview_btns_bg, LV_STATE_DEFAULT, lv_color_hex(0x979a9f));
-    lv_style_set_pad_top(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(7));
-    lv_style_set_pad_left(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(7));
-    lv_style_set_pad_right(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(7));
+    lv_style_set_pad_top(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(4));
+    lv_style_set_pad_left(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(4));
+    lv_style_set_pad_right(&styles->tabview_btns_bg, LV_STATE_DEFAULT, LV_DPX(4));
 
     lv_style_reset(&styles->tabview_btns);
     lv_style_set_bg_opa(&styles->tabview_btns, LV_STATE_PRESSED, LV_OPA_50);
     lv_style_set_bg_color(&styles->tabview_btns, LV_STATE_PRESSED, lv_color_hex3(0x888));
     lv_style_set_text_color(&styles->tabview_btns, LV_STATE_CHECKED, COLOR_SCR_TEXT);
-    lv_style_set_pad_top(&styles->tabview_btns, LV_STATE_DEFAULT, LV_DPX(20));
-    lv_style_set_pad_bottom(&styles->tabview_btns, LV_STATE_DEFAULT, LV_DPX(20));
+    lv_style_set_pad_top(&styles->tabview_btns, LV_STATE_DEFAULT, LV_DPX(4));
+    lv_style_set_pad_bottom(&styles->tabview_btns, LV_STATE_DEFAULT, LV_DPX(4));
     lv_style_set_text_color(&styles->tabview_btns, LV_STATE_FOCUSED, theme.color_primary);
     lv_style_set_text_color(&styles->tabview_btns, LV_STATE_EDITED, theme.color_secondary);
 
@@ -883,15 +881,16 @@ static void tabview_win_shared_init(void)
     lv_style_set_bg_opa(&styles->tabview_indic, LV_STATE_DEFAULT, LV_OPA_COVER);
     lv_style_set_bg_color(&styles->tabview_indic, LV_STATE_DEFAULT, theme.color_primary);
     lv_style_set_bg_color(&styles->tabview_indic, LV_STATE_EDITED, theme.color_secondary);
-    lv_style_set_size(&styles->tabview_indic, LV_STATE_DEFAULT, LV_DPX(5));
-    lv_style_set_radius(&styles->tabview_indic, LV_STATE_DEFAULT, LV_RADIUS_CIRCLE);
+    lv_style_set_size(&styles->tabview_indic, LV_STATE_DEFAULT, LV_DPX(4));
 
     lv_style_reset(&styles->tabview_page_scrl);
+# if 0
     lv_style_set_pad_top(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
     lv_style_set_pad_bottom(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
     lv_style_set_pad_left(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
     lv_style_set_pad_right(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
     lv_style_set_pad_inner(&styles->tabview_page_scrl, LV_STATE_DEFAULT, 0);
+# endif
 #endif
 }
 
