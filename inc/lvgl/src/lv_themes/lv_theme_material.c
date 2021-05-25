@@ -265,6 +265,7 @@ static void basic_init(void)
     lv_style_set_transition_prop_5(&styles->bg_click, LV_STATE_DEFAULT, LV_STYLE_BG_COLOR);
 
     lv_style_reset(&styles->btn);
+    lv_style_set_radius(&styles->btn, LV_STATE_DEFAULT, 0);
     lv_style_set_bg_opa(&styles->btn, LV_STATE_DEFAULT, LV_OPA_COVER);
     lv_style_set_bg_color(&styles->btn, LV_STATE_DEFAULT, COLOR_BTN);
     lv_style_set_bg_color(&styles->btn, LV_STATE_PRESSED, COLOR_BTN_PR);
