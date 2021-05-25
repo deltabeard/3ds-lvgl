@@ -18,6 +18,7 @@
 #include <direct.h>
 #include <dirent_port.h>
 #define chdir _chdir
+#define getcwd _getcwd
 #else
 #include <dirent.h>
 #include <unistd.h>
