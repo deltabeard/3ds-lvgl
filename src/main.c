@@ -35,16 +35,27 @@
 #include <string.h>
 
 #define BUF_PX_SIZE (GSP_SCREEN_WIDTH_TOP * 64)
-static bool quit = false;
-
-static void show_error_msg(const char *msg, lv_disp_t *disp);
-static void recreate_filepicker(void *p);
-
 #define print_fatal(x)                                                         \
 	fprintf(stderr, "FATAL: %s+%d: %s - %s\n", __func__, __LINE__, x,      \
 		strerror(errno))
 #define print_debug(x)                                                         \
 	fprintf(stderr, "DEBUG: %s+%d: %s\n", __func__, __LINE__, x)
+
+struct ui_ctx {
+	/* Opaque pointer for handling platform functions. */
+	void *platform_ctx;
+
+	/* Display objects used to select target screen for new objects. */
+	lv_disp_t *lv_disp_top, *lv_disp_bot;
+
+	/* File list used in file browser. */
+	lv_obj_t *filelist;
+};
+
+static bool quit = false;
+
+static void show_error_msg(const char *msg, lv_disp_t *disp);
+static void recreate_filepicker(void *p);
 
 static void btnev_quit(lv_obj_t *btn, lv_event_t event)
 {
@@ -439,10 +450,10 @@ static void print_cb(lv_log_level_t level, const char *file, uint32_t line,
 int main(int argc, char *argv[])
 {
 	void *ctx;
+	struct ui_ctx ui = { 0 };
 	int ret = EXIT_FAILURE;
 	lv_disp_buf_t lv_disp_buf_top, lv_disp_buf_bot;
 	lv_disp_drv_t lv_disp_drv_top, lv_disp_drv_bot;
-	lv_disp_t *lv_disp_top, *lv_disp_bot;
 	static lv_color_t top_buf[BUF_PX_SIZE];
 	static lv_color_t bot_buf[BUF_PX_SIZE];
 
@@ -480,7 +491,7 @@ int main(int argc, char *argv[])
 	lv_disp_drv_top.hor_res = NATURAL_SCREEN_WIDTH_TOP;
 	lv_disp_drv_top.ver_res = NATURAL_SCREEN_HEIGHT_TOP;
 #endif
-	lv_disp_top = lv_disp_drv_register(&lv_disp_drv_top);
+	ui.lv_disp_top = lv_disp_drv_register(&lv_disp_drv_top);
 
 	lv_disp_drv_init(&lv_disp_drv_bot);
 	lv_disp_drv_bot.buffer = &lv_disp_buf_bot;
@@ -497,13 +508,13 @@ int main(int argc, char *argv[])
 	lv_disp_drv_bot.hor_res = NATURAL_SCREEN_WIDTH_BOT;
 	lv_disp_drv_bot.ver_res = NATURAL_SCREEN_HEIGHT_BOT;
 #endif
-	lv_disp_bot = lv_disp_drv_register(&lv_disp_drv_bot);
+	ui.lv_disp_bot = lv_disp_drv_register(&lv_disp_drv_bot);
 
 	lv_disp_drv_init(&lv_disp_drv_top);
 	lv_disp_drv_init(&lv_disp_drv_bot);
 
 	/* Initialise UI input drivers. */
-	lv_disp_set_default(lv_disp_bot);
+	lv_disp_set_default(ui.lv_disp_bot);
 	lv_indev_drv_t indev_drv;
 	lv_indev_drv_init(&indev_drv);
 	indev_drv.type = LV_INDEV_TYPE_POINTER;
@@ -511,8 +522,8 @@ int main(int argc, char *argv[])
 	indev_drv.user_data = ctx;
 	lv_indev_drv_register(&indev_drv);
 
-	create_top_ui(lv_disp_top);
-	create_bottom_ui(lv_disp_bot);
+	create_top_ui(ui.lv_disp_top);
+	create_bottom_ui(ui.lv_disp_bot);
 
 	while (exit_requested(ctx) == 0 && quit == false)
 	{
