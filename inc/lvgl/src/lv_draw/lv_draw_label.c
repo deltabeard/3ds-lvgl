@@ -772,7 +772,10 @@ static void draw_letter_subpx(lv_coord_t pos_x, lv_coord_t pos_y, lv_font_glyph_
             lv_draw_mask_res_t mask_res = lv_draw_mask_apply(mask_buf + mask_p_start, map_area.x1, map_area.y2,
                                                              lv_area_get_width(&map_area));
             if(mask_res == LV_DRAW_MASK_RES_TRANSP) {
-                _lv_memset_00(mask_buf + mask_p_start, lv_area_get_width(&map_area));
+		lv_coord_t w = lv_area_get_width(&map_area);
+		if(w > 0) {
+		    _lv_memset_00(mask_buf + mask_p_start, w);
+		}
             }
         }
 
