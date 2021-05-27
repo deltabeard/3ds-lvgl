@@ -123,13 +123,11 @@ static void btnev_chdir(lv_obj_t *btn, lv_event_t event)
 {
 	lv_obj_t *label;
 	const char *dir;
-	lv_obj_t *list;
-	lv_disp_t *disp;
+	struct ui_ctx *ui;
 
 	label = lv_obj_get_child(btn, NULL);
 	dir = lv_label_get_text(label);
-	list = lv_obj_get_user_data(btn);
-	disp = lv_obj_get_user_data(list);
+	ui = lv_obj_get_user_data(btn);
 
 	if (event != LV_EVENT_CLICKED)
 		return;
@@ -137,31 +135,31 @@ static void btnev_chdir(lv_obj_t *btn, lv_event_t event)
 	if (chdir(dir) != 0)
 	{
 		char err_txt[256] = "";
+
 		snprintf(err_txt, sizeof(err_txt),
 			 "Changing directory to '%s' failed:\n"
 			 "%s",
 			 dir, strerror(errno));
-		show_error_msg(err_txt, disp);
+		show_error_msg(err_txt, ui->lv_disp_bot);
 		return;
 	}
 
-	lv_async_call(recreate_filepicker, list);
+	lv_async_call(recreate_filepicker, ui);
 
 	return;
 }
 
 static void btnev_updir(lv_obj_t *btn, lv_event_t event)
 {
-	lv_obj_t *list;
-	lv_disp_t *disp;
+	struct ui_ctx *ui;
+
 #ifdef _MSC_VER
 	char buf[] = "C:\\";
 #else
 	char buf[32];
 #endif
 
-	list = lv_obj_get_user_data(btn);
-	disp = lv_obj_get_user_data(list);
+	ui = lv_obj_get_user_data(btn);
 
 	if (event != LV_EVENT_CLICKED)
 		return;
@@ -186,11 +184,11 @@ static void btnev_updir(lv_obj_t *btn, lv_event_t event)
 			 "Unable to go up a directory:\n"
 			 "%s",
 			 strerror(errno));
-		show_error_msg(err_txt, disp);
+		show_error_msg(err_txt, ui->lv_disp_bot);
 		return;
 	}
 
-	lv_async_call(recreate_filepicker, list);
+	lv_async_call(recreate_filepicker, ui);
 
 	return;
 }
@@ -206,14 +204,14 @@ static const char *get_filename_ext(const char *filename)
 
 static void recreate_filepicker(void *p)
 {
-	lv_obj_t *list = p;
+	struct ui_ctx *ui = p;
 	lv_obj_t *list_btn = NULL, *img = NULL, *label = NULL;
 	struct dirent **namelist;
 	int entries;
 	int w;
 	lv_disp_t *disp;
 
-	disp = lv_obj_get_user_data(list);
+	disp = ui->lv_disp_bot;
 	entries = scandir(".", &namelist, NULL, alphasort);
 	if (entries == -1)
 	{
@@ -236,7 +234,7 @@ static void recreate_filepicker(void *p)
 
 	/* Clean file list */
 	{
-		lv_obj_t *scrl = lv_page_get_scrollable(list);
+		lv_obj_t *scrl = lv_page_get_scrollable(ui->filelist);
 		lv_fit_t scrl_fitl = lv_cont_get_fit_left(scrl);
 		lv_fit_t scrl_fitr = lv_cont_get_fit_right(scrl);
 		lv_fit_t scrl_fitt = lv_cont_get_fit_top(scrl);
@@ -247,7 +245,7 @@ static void recreate_filepicker(void *p)
 		 * button. */
 		lv_cont_set_fit(scrl, LV_FIT_NONE);
 		lv_cont_set_layout(scrl, LV_LAYOUT_OFF);
-		lv_page_clean(list);
+		lv_page_clean(ui->filelist);
 		lv_cont_set_fit4(scrl, scrl_fitl, scrl_fitr, scrl_fitr,
 				 scrl_fitb);
 		lv_cont_set_layout(scrl, scrl_layout);
@@ -297,7 +295,7 @@ static void recreate_filepicker(void *p)
 			}
 		}
 
-		list_btn = lv_btn_create(list, list_btn);
+		list_btn = lv_btn_create(ui->filelist, list_btn);
 		lv_page_glue_obj(list_btn, true);
 		lv_btn_set_layout(list_btn, LV_LAYOUT_ROW_MID);
 		lv_obj_set_width(list_btn, w);
@@ -313,7 +311,7 @@ static void recreate_filepicker(void *p)
 		lv_obj_set_click(label, false);
 
 		lv_obj_set_event_cb(list_btn, event_cb);
-		lv_obj_set_user_data(list_btn, list);
+		lv_obj_set_user_data(list_btn, ui);
 		lv_theme_apply(list_btn, LV_THEME_LIST_BTN);
 		// lv_group_add_obj(ui_ctx->groups[SCREEN_OPEN_FILE], list_btn);
 
@@ -323,7 +321,7 @@ static void recreate_filepicker(void *p)
 	free(namelist);
 }
 
-static void create_top_ui(lv_disp_t *top_disp)
+static void create_top_ui(struct ui_ctx *ui)
 {
 	const char *lorem_ipsum = "بنی‌آدم اعضای یک پیکرند\n"
 		"که در آفرينش ز یک گوهرند\n"
@@ -335,9 +333,9 @@ static void create_top_ui(lv_disp_t *top_disp)
 	lv_coord_t ver, hor;
 
 	/* Select bottom screen. */
-	lv_disp_set_default(top_disp);
-	ver = lv_disp_get_ver_res(top_disp);
-	hor = lv_disp_get_hor_res(top_disp);
+	lv_disp_set_default(ui->lv_disp_top);
+	ver = lv_disp_get_ver_res(ui->lv_disp_top);
+	hor = lv_disp_get_hor_res(ui->lv_disp_top);
 
 	top_cont = lv_cont_create(lv_scr_act(), NULL);
 	label1 = lv_label_create(top_cont, NULL);
@@ -348,14 +346,14 @@ static void create_top_ui(lv_disp_t *top_disp)
 	lv_cont_set_layout(top_cont, LV_LAYOUT_COLUMN_MID);
 }
 
-static void create_bottom_ui(lv_disp_t *bottom_disp)
+static void create_bottom_ui(struct ui_ctx *ui)
 {
 	lv_obj_t *tabview;
 	lv_obj_t *tab_file, *tab_playlist, *tab_control, *tab_settings,
 	    *tab_system;
 
 	/* Select bottom screen. */
-	lv_disp_set_default(bottom_disp);
+	lv_disp_set_default(ui->lv_disp_bot);
 
 	/* Create tabview with main options. */
 	tabview = lv_tabview_create(lv_scr_act(), NULL);
@@ -368,7 +366,7 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 
 	/* Create file picker. */
 	{
-		lv_obj_t *list, *toolbar;
+		lv_obj_t *toolbar;
 		lv_coord_t cw = lv_obj_get_width(tab_file);
 		lv_coord_t ch = lv_obj_get_height(tab_file);
 		lv_coord_t toolbar_h = 32;
@@ -376,7 +374,7 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 
 		lv_cont_set_layout(file_scrl, LV_LAYOUT_ROW_TOP);
 
-		list = lv_page_create(tab_file, NULL);
+		ui->filelist = lv_page_create(tab_file, NULL);
 		toolbar = lv_cont_create(tab_file, NULL);
 
 		lv_obj_set_state(toolbar, LV_STATE_DISABLED);
@@ -396,31 +394,32 @@ static void create_bottom_ui(lv_disp_t *bottom_disp)
 			lv_label_set_text(btn_lbl, LV_SYMBOL_UP);
 			lv_obj_set_size(btn, toolbar_h, toolbar_h);
 			lv_obj_set_event_cb(btn, btnev_updir);
-			lv_obj_set_user_data(btn, list);
+			lv_obj_set_user_data(btn, ui);
 
 			btn = lv_btn_create(toolbar, NULL);
 			btn_lbl = lv_label_create(btn, NULL);
 			lv_label_set_text(btn_lbl, LV_SYMBOL_PLUS);
 			lv_obj_set_size(btn, toolbar_h, toolbar_h);
 			//lv_obj_set_event_cb(btn, btnev_updir);
-			lv_obj_set_user_data(btn, list);
+			lv_obj_set_user_data(btn, ui);
 
 			btn = lv_btn_create(toolbar, NULL);
 			btn_lbl = lv_label_create(btn, NULL);
 			lv_label_set_text(btn_lbl, LV_SYMBOL_PLAY);
 			lv_obj_set_size(btn, toolbar_h, toolbar_h);
 			//lv_obj_set_event_cb(btn, btnev_updir);
-			lv_obj_set_user_data(btn, list);
+			lv_obj_set_user_data(btn, ui);
 		}
 
-		lv_obj_set_size(list, cw - toolbar_h, ch);
-		lv_theme_apply(list, LV_THEME_LIST);
-		lv_page_set_scrl_layout(list, LV_LAYOUT_COLUMN_MID);
-		lv_page_set_scrollbar_mode(list, LV_SCROLLBAR_MODE_AUTO);
+		lv_obj_set_size(ui->filelist, cw - toolbar_h, ch);
+		lv_theme_apply(ui->filelist, LV_THEME_LIST);
+		lv_page_set_scrl_layout(ui->filelist, LV_LAYOUT_COLUMN_MID);
+		lv_page_set_scrollbar_mode(ui->filelist,
+					   LV_SCROLLBAR_MODE_AUTO);
 
 		/* Store target display in user data for the file list. */
-		lv_obj_set_user_data(list, bottom_disp);
-		lv_async_call(recreate_filepicker, list);
+		lv_obj_set_user_data(ui->filelist, ui);
+		lv_async_call(recreate_filepicker, ui);
 	}
 
 	/* Populate system tab. */
@@ -449,7 +448,7 @@ static void print_cb(lv_log_level_t level, const char *file, uint32_t line,
 
 int main(int argc, char *argv[])
 {
-	void *ctx;
+	platform_ctx_s *ctx;
 	struct ui_ctx ui = { 0 };
 	int ret = EXIT_FAILURE;
 	lv_disp_buf_t lv_disp_buf_top, lv_disp_buf_bot;
@@ -522,8 +521,8 @@ int main(int argc, char *argv[])
 	indev_drv.user_data = ctx;
 	lv_indev_drv_register(&indev_drv);
 
-	create_top_ui(ui.lv_disp_top);
-	create_bottom_ui(ui.lv_disp_bot);
+	create_top_ui(&ui);
+	create_bottom_ui(&ui);
 
 	while (exit_requested(ctx) == 0 && quit == false)
 	{
