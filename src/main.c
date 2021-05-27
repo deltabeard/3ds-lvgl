@@ -217,7 +217,7 @@ static void recreate_filepicker(void *p)
 		show_error_msg(err_txt, disp);
 
 		/* Attempt to recover by going to root directory. */
-		chdir("/");
+		(void) chdir("/");
 
 		/* Don't clean file list on error. */
 		return;

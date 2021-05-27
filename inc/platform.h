@@ -17,14 +17,46 @@
 #define SCREEN_PIXELS_BOT		(GSP_SCREEN_WIDTH_BOT * GSP_SCREEN_HEIGHT_BOT)
 
 /* Declerations for platform specific functions. */
-void *init_system(void);
-void handle_events(void *ctx);
-void render_present(void *ctx);
+/* Opaque platform context. */
+typedef struct platform_ctx platform_ctx_s;
+
+/* Thread function pointer. */
+typedef void *(platform_thread_fn)(void *);
+
+/* Mutex context. */
+typedef struct platform_mutex platform_mutex_s;
+
+/* Atomic context. */
+typedef struct platform_atomic platform_atomic_s;
+
+/**
+ * Initialise platform.
+ * \returns Opaque pointer to platform context, or NULL on error.
+ */
+platform_ctx_s *init_system(void);
+void handle_events(platform_ctx_s *ctx);
+void render_present(platform_ctx_s *ctx);
 void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p);
 void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p);
 bool read_pointer(struct _lv_indev_drv_t *indev_drv,
 			 lv_indev_data_t *data);
-void exit_system(void *ctx);
-int exit_requested(void *ctx);
+void exit_system(platform_ctx_s *ctx);
+int exit_requested(platform_ctx_s *ctx);
+
+/**
+ * Create a detached thread.
+ */
+void platform_create_thread(platform_thread_fn fn, void *thread_data);
+
+/* Functions for synchronization mechanisms. */
+platform_mutex_s *platform_create_mutex(void);
+void platform_destroy_mutex(platform_mutex_s *mutex);
+void platform_lock_mutex(platform_mutex_s *mutex);
+int platform_try_lock_mutex(platform_mutex_s *mutex);
+void platform_unlock_mutex(platform_mutex_s *mutex);
+
+/* Functions for atomic operations. */
+int platform_atomic_get(platform_atomic_s *atomic);
+void platform_atomic_set(platform_atomic_s *atomic, int val);

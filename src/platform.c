@@ -13,13 +13,17 @@
 #if defined(__3DS__)
 # include <3ds.h>
 
-int exit_requested(void *ctx)
+struct platform_ctx
 {
-	(void) ctx;
+	unsigned unused;
+};
+
+int exit_requested(platform_ctx_s *ctx)
+{
 	return !aptMainLoop();
 }
 
-void *init_system(void)
+platform_ctx_s *init_system(void)
 {
 	void *c = NULL;
 	u16 width, height;
@@ -37,7 +41,7 @@ out:
 	return c;
 }
 
-void handle_events(void *ctx)
+void handle_events(platform_ctx_s *ctx)
 {
 	u32 kDown;
 
@@ -48,7 +52,7 @@ void handle_events(void *ctx)
 	return;
 }
 
-void render_present(void *ctx)
+void render_present(platform_ctx_s *ctx)
 {
 	gfxFlushBuffers();
 	gfxScreenSwapBuffers(GFX_TOP, false);
@@ -74,7 +78,7 @@ static void draw_pixels(lv_color_t *restrict dst, const lv_color_t *restrict src
 void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
-	struct system_ctx *c = disp_drv->user_data;
+	struct platform_ctx *c = disp_drv->user_data;
 	u16 w;
 	lv_color_t *fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &w, NULL);
 	draw_pixels(fb, color_p, area, w);
@@ -84,7 +88,7 @@ void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
-	struct system_ctx *c = disp_drv->user_data;
+	struct platform_ctx *c = disp_drv->user_data;
 	u16 w;
 	lv_color_t *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &w, NULL);
 	draw_pixels(fb, color_p, area, w);
@@ -109,7 +113,7 @@ bool read_pointer(struct _lv_indev_drv_t *indev_drv,
 	return false;
 }
 
-void exit_system(void *ctx)
+void exit_system(platform_ctx_s *ctx)
 {
 	gfxExit();
 	ctx = NULL;
@@ -119,49 +123,49 @@ void exit_system(void *ctx)
 #else
 #include <SDL.h>
 
-int exit_requested(void *ctx)
-{
-	(void) ctx;
-	return SDL_QuitRequested();
-}
-
-struct system_ctx
+struct platform_ctx
 {
 	SDL_Window *win_top;
 	SDL_Window *win_bot;
 };
 
-void *init_system(void)
+int exit_requested(platform_ctx_s *ctx)
 {
-	struct system_ctx *c;
+	(void) ctx;
+	return SDL_QuitRequested();
+}
+
+platform_ctx_s *init_system(void)
+{
+	struct platform_ctx *ctx;
 	int win_top_x, win_top_y, win_top_border;
 
-	c = SDL_calloc(1, sizeof(struct system_ctx));
-	SDL_assert_always(c != NULL);
+	ctx = SDL_calloc(1, sizeof(struct platform_ctx));
+	SDL_assert_always(ctx != NULL);
 
 	SDL_LogSetAllPriority(SDL_LOG_PRIORITY_INFO);
 	SDL_Init(SDL_INIT_EVERYTHING);
 
-	c->win_top = SDL_CreateWindow("3DS Top Screen",
+	ctx->win_top = SDL_CreateWindow("3DS Top Screen",
 		SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 		NATURAL_SCREEN_WIDTH_TOP, NATURAL_SCREEN_HEIGHT_TOP, 0);
-	SDL_assert_always(c->win_top != NULL);
+	SDL_assert_always(ctx->win_top != NULL);
 
 	/* Align the bottom window to the top window. */
-	SDL_GetWindowPosition(c->win_top, &win_top_x, &win_top_y);
-	SDL_GetWindowBordersSize(c->win_top, &win_top_border, NULL, NULL, NULL);
+	SDL_GetWindowPosition(ctx->win_top, &win_top_x, &win_top_y);
+	SDL_GetWindowBordersSize(ctx->win_top, &win_top_border, NULL, NULL, NULL);
 	win_top_x += (GSP_SCREEN_HEIGHT_TOP - GSP_SCREEN_HEIGHT_BOT) / 2;
 	win_top_y += GSP_SCREEN_WIDTH_TOP + win_top_border;
 
-	c->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
+	ctx->win_bot = SDL_CreateWindow("3DS Bottom Screen", win_top_x, win_top_y,
 				      NATURAL_SCREEN_WIDTH_BOT,
 				      NATURAL_SCREEN_HEIGHT_BOT, 0);
-	SDL_assert_always(c->win_bot != NULL);
+	SDL_assert_always(ctx->win_bot != NULL);
 
-	return c;
+	return ctx;
 }
 
-void handle_events(void *ctx)
+void handle_events(platform_ctx_s *ctx)
 {
 	SDL_Event e;
 
@@ -171,11 +175,10 @@ void handle_events(void *ctx)
 	return;
 }
 
-void render_present(void *ctx)
+void render_present(platform_ctx_s *ctx)
 {
-	struct system_ctx *c = ctx;
-	SDL_UpdateWindowSurface(c->win_top);
-	SDL_UpdateWindowSurface(c->win_bot);
+	SDL_UpdateWindowSurface(ctx->win_top);
+	SDL_UpdateWindowSurface(ctx->win_bot);
 	SDL_Delay(5);
 	return;
 }
@@ -201,8 +204,8 @@ static void flush_cb(SDL_Surface *dst, const lv_area_t *area,
 void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
-	struct system_ctx *c = disp_drv->user_data;
-	SDL_Surface *surf_top = SDL_GetWindowSurface(c->win_top);
+	struct platform_ctx *ctx = disp_drv->user_data;
+	SDL_Surface *surf_top = SDL_GetWindowSurface(ctx->win_top);
 	flush_cb(surf_top, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
@@ -210,15 +213,15 @@ void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 			 lv_color_t *color_p)
 {
-	struct system_ctx *c = disp_drv->user_data;
-	SDL_Surface *surf_bot = SDL_GetWindowSurface(c->win_bot);
+	struct platform_ctx *ctx = disp_drv->user_data;
+	SDL_Surface *surf_bot = SDL_GetWindowSurface(ctx->win_bot);
 	flush_cb(surf_bot, area, color_p);
 	lv_disp_flush_ready(disp_drv);
 }
 
 bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 {
-	struct system_ctx *c = indev_drv->user_data;
+	struct platform_ctx *ctx = indev_drv->user_data;
 
 	if (indev_drv->type == LV_INDEV_TYPE_POINTER)
 	{
@@ -229,7 +232,7 @@ bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 		Uint32 win_focused_id;
 
 		win_active = SDL_GetMouseFocus();
-		win_bot_id = SDL_GetWindowID(c->win_bot);
+		win_bot_id = SDL_GetWindowID(ctx->win_bot);
 		win_focused_id = SDL_GetWindowID(win_active);
 
 		/* Only accept touch input on bottom screen. */
@@ -283,12 +286,10 @@ bool read_pointer(lv_indev_drv_t *indev_drv, lv_indev_data_t *data)
 	}
 	return false;
 }
-void exit_system(void *ctx)
+void exit_system(platform_ctx_s *ctx)
 {
-	struct system_ctx *c = ctx;
-
-	SDL_DestroyWindow(c->win_top);
-	SDL_DestroyWindow(c->win_bot);
+	SDL_DestroyWindow(ctx->win_top);
+	SDL_DestroyWindow(ctx->win_bot);
 	SDL_Quit();
 
 	return;
