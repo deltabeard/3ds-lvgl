@@ -46,12 +46,17 @@ Example: make BUILD=RELEASE EXTRA_CFLAGS="-march=native"
 $(LICENSE)
 endef
 
+# Default platform is UNIX unless certain conditions are met.
+PLATFORM := UNIX
+BRCK := /
+
 ifdef VSCMD_VER
 	PLATFORM := MSVC
 	BRCK := $(strip \ )
-else
-	PLATFORM := UNIX
-	BRCK := /
+else ifeq ($(MSYSTEM),MSYS)
+	ifdef DEVKITARM
+		PLATFORM := 3DS
+	endif
 endif
 
 ifeq ($(PLATFORM),MSVC)
