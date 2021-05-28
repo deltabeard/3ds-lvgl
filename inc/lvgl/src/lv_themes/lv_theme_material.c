@@ -506,13 +506,13 @@ static void arc_init(void)
 #if LV_USE_ARC != 0
     lv_style_reset(&styles->arc_indic);
     lv_style_set_line_color(&styles->arc_indic, LV_STATE_DEFAULT, theme.color_primary);
-    lv_style_set_line_width(&styles->arc_indic, LV_STATE_DEFAULT, LV_DPX(25));
-    lv_style_set_line_rounded(&styles->arc_indic, LV_STATE_DEFAULT, true);
+    lv_style_set_line_width(&styles->arc_indic, LV_STATE_DEFAULT, LV_DPX(8));
+    lv_style_set_line_rounded(&styles->arc_indic, LV_STATE_DEFAULT, false);
 
     lv_style_reset(&styles->arc_bg);
     lv_style_set_line_color(&styles->arc_bg, LV_STATE_DEFAULT, COLOR_BG_SEC);
-    lv_style_set_line_width(&styles->arc_bg, LV_STATE_DEFAULT, LV_DPX(25));
-    lv_style_set_line_rounded(&styles->arc_bg, LV_STATE_DEFAULT, true);
+    lv_style_set_line_width(&styles->arc_bg, LV_STATE_DEFAULT, LV_DPX(8));
+    lv_style_set_line_rounded(&styles->arc_bg, LV_STATE_DEFAULT, false);
 
     lv_style_reset(&styles->arc_knob);
     lv_style_set_radius(&styles->arc_knob, LV_STATE_DEFAULT,   LV_RADIUS_CIRCLE);

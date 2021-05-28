@@ -1,3 +1,5 @@
+#pragma once
+
 #include <lvgl.h>
 
 /* 3DS screens are portrait, so framebuffer must be rotated by 90 degrees. */
@@ -24,10 +26,17 @@ typedef struct platform_ctx platform_ctx_s;
 typedef void *(platform_thread_fn)(void *);
 
 /* Mutex context. */
-typedef struct platform_mutex platform_mutex_s;
+typedef void platform_mutex_s;
 
 /* Atomic context. */
-typedef struct platform_atomic platform_atomic_s;
+typedef struct { int value; } platform_atomic_s;
+
+typedef enum
+{
+	LOCK_MUTEX_ERROR = -1,
+	LOCK_MUTEX_SUCCESS = 0,
+	LOCK_MUTEX_TIMEOUT = 1
+} mutex_stat_e;
 
 /**
  * Initialise platform.
@@ -54,9 +63,13 @@ void platform_create_thread(platform_thread_fn fn, void *thread_data);
 platform_mutex_s *platform_create_mutex(void);
 void platform_destroy_mutex(platform_mutex_s *mutex);
 void platform_lock_mutex(platform_mutex_s *mutex);
-int platform_try_lock_mutex(platform_mutex_s *mutex);
+mutex_stat_e platform_try_lock_mutex(platform_mutex_s *mutex);
 void platform_unlock_mutex(platform_mutex_s *mutex);
 
 /* Functions for atomic operations. */
 int platform_atomic_get(platform_atomic_s *atomic);
 void platform_atomic_set(platform_atomic_s *atomic, int val);
+
+void platform_usleep(unsigned ms);
+
+uint64_t platform_get_ticks(void);

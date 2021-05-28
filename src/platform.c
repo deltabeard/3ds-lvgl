@@ -80,7 +80,7 @@ void flush_top_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 {
 	struct platform_ctx *c = disp_drv->user_data;
 	u16 w;
-	lv_color_t *fb = gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &w, NULL);
+	lv_color_t *fb = (lv_color_t *)gfxGetFramebuffer(GFX_TOP, GFX_LEFT, &w, NULL);
 	draw_pixels(fb, color_p, area, w);
 	lv_disp_flush_ready(disp_drv);
 }
@@ -90,7 +90,7 @@ void flush_bot_cb(struct _disp_drv_t *disp_drv, const lv_area_t *area,
 {
 	struct platform_ctx *c = disp_drv->user_data;
 	u16 w;
-	lv_color_t *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &w, NULL);
+	lv_color_t *fb = (lv_color_t *)gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &w, NULL);
 	draw_pixels(fb, color_p, area, w);
 	lv_disp_flush_ready(disp_drv);
 }
@@ -118,6 +118,71 @@ void exit_system(platform_ctx_s *ctx)
 	gfxExit();
 	ctx = NULL;
 	return;
+}
+
+void platform_create_thread(platform_thread_fn fn, void *thread_data)
+{
+	const size_t stack_size = 4 * 1024;
+	s32 prio = 0;
+
+	svcGetThreadPriority(&prio, CUR_THREAD_HANDLE);
+	threadCreate(fn, thread_data, stack_size, prio + 1, -2, true);
+}
+
+/* Functions for synchronization mechanisms. */
+platform_mutex_s *platform_create_mutex(void)
+{
+	static LightLock locks[16];
+	static int locks_used = 0;
+	LightLock *lock;
+
+	if (locks_used >= sizeof(locks) / sizeof(locks[0]))
+		return NULL;
+
+	LightLock_Init(&locks[locks_used]);
+	return &locks[locks_used];
+}
+
+void platform_destroy_mutex(platform_mutex_s *mutex)
+{
+	return;
+}
+
+void platform_lock_mutex(platform_mutex_s *mutex)
+{
+	LightLock_Lock(mutex);
+}
+
+mutex_stat_e platform_try_lock_mutex(platform_mutex_s *mutex)
+{
+	return LightLock_TryLock(mutex);
+}
+
+void platform_unlock_mutex(platform_mutex_s *mutex)
+{
+	LightLock_Unlock(mutex);
+}
+
+/* Functions for atomic operations. */
+int platform_atomic_get(platform_atomic_s *atomic)
+{
+	return __atomic_load_n(&atomic->value, __ATOMIC_SEQ_CST);
+}
+
+void platform_atomic_set(platform_atomic_s *atomic, int val)
+{
+	__atomic_store_n(&atomic->value, val, __ATOMIC_SEQ_CST);
+}
+
+void platform_usleep(unsigned ms)
+{
+	s64 ns = (u64)ms * 1024UL;
+	svcSleepThread(ns);
+}
+
+uint64_t platform_get_ticks(void)
+{
+	return osGetTime();
 }
 
 #else
@@ -293,6 +358,66 @@ void exit_system(platform_ctx_s *ctx)
 	SDL_Quit();
 
 	return;
+}
+
+void platform_create_thread(platform_thread_fn fn, void *thread_data)
+{
+	char thread_name[32];
+	SDL_Thread *thread;
+
+	SDL_snprintf(thread_name, sizeof(thread_name), "Thread %p", fn);
+	thread = SDL_CreateThread(fn, thread_name, thread_data);
+	SDL_SetThreadPriority(SDL_THREAD_PRIORITY_LOW);
+	SDL_DetachThread(thread);
+}
+
+/* Functions for synchronization mechanisms. */
+platform_mutex_s *platform_create_mutex(void)
+{
+	return SDL_CreateMutex();
+}
+
+void platform_destroy_mutex(platform_mutex_s *mutex)
+{
+	SDL_DestroyMutex(mutex);
+}
+
+void platform_lock_mutex(platform_mutex_s *mutex)
+{
+	SDL_LockMutex(mutex);
+}
+
+mutex_stat_e platform_try_lock_mutex(platform_mutex_s *mutex)
+{
+	int r;
+	r = SDL_TryLockMutex(mutex);
+	return (mutex_stat_e)r;
+}
+
+void platform_unlock_mutex(platform_mutex_s *mutex)
+{
+	SDL_UnlockMutex(mutex);
+}
+
+/* Functions for atomic operations. */
+int platform_atomic_get(platform_atomic_s *atomic)
+{
+	return SDL_AtomicGet((SDL_atomic_t *)atomic);
+}
+
+void platform_atomic_set(platform_atomic_s *atomic, int val)
+{
+	SDL_AtomicSet((SDL_atomic_t *)atomic, val);
+}
+
+void platform_usleep(unsigned ms)
+{
+	SDL_Delay(ms);
+}
+
+uint64_t platform_get_ticks(void)
+{
+	return SDL_GetTicks();
 }
 
 #endif

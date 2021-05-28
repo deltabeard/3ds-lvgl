@@ -7,11 +7,8 @@
  * USE OF THIS SOFTWARE.
  */
 
-#ifdef __3DS__
-#include <3ds.h>
-#else
-#define LV_USE_LOG 1
-#include <SDL.h>
+#ifndef __3DS__
+# define LV_USE_LOG 1
 #endif
 
 #ifdef _MSC_VER
@@ -48,11 +45,49 @@ struct ui_ctx {
 	/* Display objects used to select target screen for new objects. */
 	lv_disp_t *lv_disp_top, *lv_disp_bot;
 
+	/* LVGL function mutex. */
+	platform_mutex_s *lv_mutex;
+
 	/* File list used in file browser. */
 	lv_obj_t *filelist;
+	/* Toolbar for the file browser. */
+	lv_obj_t *filetoolbar;
+	/* Spinner showing load progress of file browser. */
+	lv_obj_t *fileloadspinner;
+
+	/* File list population synchronisation. */
+	platform_atomic_s filelist_populating;
+#define FP_POP_NO  0
+#define FP_POP_YES 1
+	platform_atomic_s filelist_finished;
+#define FP_POPFIN_NO  0
+#define FP_POPFIN_YES 1
+
+};
+
+/* Context for file picker poulation thread. */
+struct fp_comp {
+	/* User interface context. */
+	struct ui_ctx *u;
+
+	/* List of files and folders to populate. */
+	struct dirent **namelist;
+
+	/* Width of buttons within the file picker to use. */
+	lv_coord_t w;
+
+	/* Number of entries in the namelist. */
+	int entries;
+
+	/* Entries in the namelist that have already been populated on to the
+	 * file picker list. */
+	int entries_added;
 };
 
 static bool quit = false;
+static const char *compat_fileext[] = {
+	"wav", "flac", "mp3", "mp2", "ogg", "opus"
+};
 
 static void show_error_msg(const char *msg, lv_disp_t *disp);
 static void recreate_filepicker(void *p);
@@ -202,18 +237,166 @@ static const char *get_filename_ext(const char *filename)
     return dot + 1;
 }
 
+/**
+ * Populates the file picker list using the given dirent namelist.
+ *
+ * \param p File picker thread context.
+ */
+static int filepicker_add_entries(void *p)
+{
+	struct fp_comp *c = p;
+	struct ui_ctx *ui = c->u;
+	lv_obj_t *list_btn = NULL, *img = NULL, *label = NULL;
+	const uint32_t tlim = 10;
+	uint32_t ticks_ms = platform_get_ticks();
+
+	/* Whilst we're still in the same folder, keep populating the file
+
+	 * * picker until all the items in the folder are rendered. */
+	while (c->entries_added < c->entries &&
+	       platform_atomic_get(&ui->filelist_populating) == FP_POP_YES)
+	{
+		lv_event_cb_t event_cb;
+		lv_anim_value_t deg;
+		const char *symbol = LV_SYMBOL_FILE;
+		mutex_stat_e mtx_stat;
+
+		mtx_stat = platform_try_lock_mutex(ui->lv_mutex);
+		if (mtx_stat == LOCK_MUTEX_TIMEOUT)
+		{
+			/* If the lvgl mutex is locked, wait and try again. */
+			platform_usleep(1);
+			continue;
+		}
+		else if (mtx_stat == LOCK_MUTEX_ERROR)
+		{
+			/* This shouldn't happen, but if it does, exit this
+			 * thread. */
+			goto out;
+		}
+
+		/* Select the most appropriate button image for the current
+		 * item being added to the file picker. */
+		if (c->namelist[c->entries_added]->d_type == DT_DIR)
+		{
+			event_cb = btnev_chdir;
+			symbol = LV_SYMBOL_DIRECTORY;
+		}
+		else if (c->namelist[c->entries_added]->d_type == DT_LNK)
+		{
+			event_cb = btnev_chdir;
+			symbol = LV_SYMBOL_DIRECTORY;
+		}
+		else
+		{
+			const unsigned exts_n =
+			    sizeof(compat_fileext) / sizeof(*compat_fileext);
+			const char *ext = get_filename_ext(
+			    c->namelist[c->entries_added]->d_name);
+
+			for (unsigned ext_n = 0; ext_n < exts_n; ext_n++)
+			{
+				if (strcmp(ext, compat_fileext[ext_n]) != 0)
+					continue;
+
+				symbol = LV_SYMBOL_AUDIO;
+				break;
+			}
+		}
+
+		/* Create file entry button. */
+		list_btn = lv_btn_create(ui->filelist, list_btn);
+		lv_page_glue_obj(list_btn, true);
+		lv_btn_set_layout(list_btn, LV_LAYOUT_ROW_MID);
+		lv_obj_set_width(list_btn, c->w);
+
+		/* Set button image. */
+		img = lv_img_create(list_btn, img);
+		lv_img_set_src(img, symbol);
+		lv_obj_set_click(img, false);
+
+		label = lv_label_create(list_btn, label);
+		lv_obj_set_width(label,
+				 c->w - (lv_obj_get_width_margin(img) * 4));
+		lv_label_set_text(label, c->namelist[c->entries_added]->d_name);
+		lv_label_set_long_mode(label, LV_LABEL_LONG_CROP);
+		lv_obj_set_click(label, false);
+
+		lv_obj_set_event_cb(list_btn, event_cb);
+		lv_obj_set_user_data(list_btn, ui);
+		lv_theme_apply(list_btn, LV_THEME_LIST_BTN);
+		//lv_group_add_obj(u->groups[SCREEN_OPEN_FILE], list_btn);
+
+		/* Free memory allocated by scandir(); LVGL allocated memory
+		 * internally when setting the button label. */
+		free(c->namelist[c->entries_added]);
+
+		/* Move to the next entry. */
+		c->entries_added++;
+
+		/* Set the spinner progress bar. */
+		// deg = ((float)c->entries_added / (float)c->entries) * 360.0f;
+		/* Optimisation of the above which removes the use of
+		 * floating-point instructions.
+		 * "361" makes the angle round up. */
+		deg = (((c->entries_added * 1024U) / (c->entries)) * 361U) /
+		      1024U;
+		lv_spinner_set_arc_length(ui->fileloadspinner, deg);
+
+		/* Unlock the mutex to give the UI a chance to render if it is
+		 * waiting. */
+		platform_unlock_mutex(ui->lv_mutex);
+
+		/* Since the main thread sleeps for 1ms on failure to lock
+		 * mutex, we sleep this thread for 2 seconds to give the main
+		 * thread a chance to continue.
+		 */
+		if ((platform_get_ticks() - ticks_ms) >= tlim)
+		{
+			platform_usleep(4);
+			ticks_ms = platform_get_ticks();
+		}
+	}
+
+out:
+	/* Signal to the main thread that populating the filer picker list has
+	 * completed. */
+	platform_atomic_set(&ui->filelist_finished, FP_POPFIN_YES);
+
+	free(c->namelist);
+	free(c);
+	return 0;
+}
+
+
 static void recreate_filepicker(void *p)
 {
 	struct ui_ctx *ui = p;
 	lv_obj_t *list_btn = NULL, *img = NULL, *label = NULL;
-	struct dirent **namelist;
-	int entries;
-	int w;
-	lv_disp_t *disp;
+	uint32_t ticks;
+	struct fp_comp *c;
 
-	disp = ui->lv_disp_bot;
-	entries = scandir(".", &namelist, NULL, alphasort);
-	if (entries == -1)
+	c = malloc(sizeof(struct fp_comp));
+	if (c == NULL)
+	{
+		show_error_msg("Unable to allocate memory for file picker context",
+			ui->lv_disp_bot);
+		return;
+	}
+
+	/* If previous population of folder hasn't finish, signal to the thread
+	 * to finish immediately. */
+	while (platform_atomic_get(&ui->filelist_finished) == FP_POPFIN_NO)
+	{
+		platform_atomic_set(&ui->filelist_populating, FP_POP_NO);
+		platform_usleep(1);
+	}
+
+	lv_obj_set_hidden(ui->fileloadspinner, true);
+	lv_spinner_set_arc_length(ui->fileloadspinner, 0);
+
+	c->entries = scandir(".", &c->namelist, NULL, alphasort);
+	if (c->entries == -1)
 	{
 		char err_txt[512] = "";
 		char buf[PATH_MAX];
@@ -223,7 +406,7 @@ static void recreate_filepicker(void *p)
 			 getcwd(buf, sizeof(buf)) != NULL ? buf : "directory",
 			 strerror(errno));
 
-		show_error_msg(err_txt, disp);
+		show_error_msg(err_txt, ui->lv_disp_bot);
 
 		/* Attempt to recover by going to root directory. */
 		(void) chdir("/");
@@ -249,32 +432,34 @@ static void recreate_filepicker(void *p)
 		lv_cont_set_fit4(scrl, scrl_fitl, scrl_fitr, scrl_fitr,
 				 scrl_fitb);
 		lv_cont_set_layout(scrl, scrl_layout);
-		w = lv_obj_get_width_fit(scrl);
+		c->w = lv_obj_get_width_fit(scrl);
 	}
 
-	for (int e = 0; e < entries; e++)
+	ticks = platform_get_ticks();
+	c->entries_added = 0;
+	c->u = ui;
+
+	for (; c->entries_added < c->entries; c->entries_added++)
 	{
 		lv_event_cb_t event_cb = NULL;
 		const char *symbol = LV_SYMBOL_FILE;
-		const char *compat_fileext[] = {
-			"wav", "flac", "mp3", "mp2", "ogg", "opus"
-		};
+		const unsigned filelist_time_thresh = 10;
 
 		/* Ignore "current directory" file. */
-		if (strcmp(namelist[e]->d_name, ".") == 0)
+		if (strcmp(c->namelist[c->entries_added]->d_name, ".") == 0)
 			continue;
 
 		/* Ignore "up directory" file, since the 3DS does not generate
 		 * this automatically. */
-		if (strcmp(namelist[e]->d_name, "..") == 0)
+		if (strcmp(c->namelist[c->entries_added]->d_name, "..") == 0)
 			continue;
 
-		if(namelist[e]->d_type == DT_DIR)
+		if (c->namelist[c->entries_added]->d_type == DT_DIR)
 		{
 			event_cb = btnev_chdir;
 			symbol = LV_SYMBOL_DIRECTORY;
 		}
-		else if(namelist[e]->d_type == DT_LNK)
+		else if (c->namelist[c->entries_added]->d_type == DT_LNK)
 		{
 			event_cb = btnev_chdir;
 			symbol = LV_SYMBOL_DIRECTORY;
@@ -283,7 +468,8 @@ static void recreate_filepicker(void *p)
 		{
 			const unsigned exts_n =
 				sizeof(compat_fileext)/sizeof(*compat_fileext);
-			const char *ext = get_filename_ext(namelist[e]->d_name);
+			const char *ext = get_filename_ext(
+			    c->namelist[c->entries_added]->d_name);
 
 			for(unsigned ext_n = 0; ext_n < exts_n; ext_n++)
 			{
@@ -298,15 +484,15 @@ static void recreate_filepicker(void *p)
 		list_btn = lv_btn_create(ui->filelist, list_btn);
 		lv_page_glue_obj(list_btn, true);
 		lv_btn_set_layout(list_btn, LV_LAYOUT_ROW_MID);
-		lv_obj_set_width(list_btn, w);
+		lv_obj_set_width(list_btn, c->w);
 
 		img = lv_img_create(list_btn, img);
 		lv_img_set_src(img, symbol);
 		lv_obj_set_click(img, false);
 
 		label = lv_label_create(list_btn, label);
-		lv_obj_set_width(label, w - (lv_obj_get_width_margin(img) * 4));
-		lv_label_set_text(label, namelist[e]->d_name);
+		lv_obj_set_width(label, c->w - (lv_obj_get_width_margin(img) * 4));
+		lv_label_set_text(label, c->namelist[c->entries_added]->d_name);
 		lv_label_set_long_mode(label, LV_LABEL_LONG_CROP);
 		lv_obj_set_click(label, false);
 
@@ -315,10 +501,28 @@ static void recreate_filepicker(void *p)
 		lv_theme_apply(list_btn, LV_THEME_LIST_BTN);
 		// lv_group_add_obj(ui_ctx->groups[SCREEN_OPEN_FILE], list_btn);
 
-		free(namelist[e]);
+		free(c->namelist[c->entries_added]);
+
+		/* Always allow one button to be created before decided whether
+		 * or not loading this folder is taking too long. */
+		if ((platform_get_ticks() - ticks) >=
+				filelist_time_thresh)
+		{
+			c->entries_added++;
+			lv_obj_set_hidden(ui->fileloadspinner, false);
+			platform_atomic_set(&ui->filelist_populating,
+					    FP_POP_YES);
+			platform_atomic_set(&ui->filelist_finished,
+					    FP_POPFIN_NO);
+
+			/* If loading the folder is taking too long, create a
+			 * thread to load the remaining entries. */
+			platform_create_thread(filepicker_add_entries, c);
+			return;
+		}
 	}
 
-	free(namelist);
+	free(c->namelist);
 }
 
 static void create_top_ui(struct ui_ctx *ui)
@@ -409,6 +613,17 @@ static void create_bottom_ui(struct ui_ctx *ui)
 			lv_obj_set_size(btn, toolbar_h, toolbar_h);
 			//lv_obj_set_event_cb(btn, btnev_updir);
 			lv_obj_set_user_data(btn, ui);
+
+			ui->fileloadspinner = lv_spinner_create(toolbar, NULL);
+			lv_obj_set_hidden(ui->fileloadspinner, true);
+			lv_obj_set_style_local_pad_all(
+			    ui->fileloadspinner, LV_SPINNER_PART_BG,
+			    LV_STATE_DEFAULT, 4);
+			lv_spinner_set_type(ui->fileloadspinner,
+					    LV_SPINNER_TYPE_CONSTANT_ARC);
+			lv_obj_set_size(ui->fileloadspinner, toolbar_h,
+					toolbar_h);
+			lv_spinner_set_arc_length(ui->fileloadspinner, 0);
 		}
 
 		lv_obj_set_size(ui->filelist, cw - toolbar_h, ch);
@@ -521,11 +736,18 @@ int main(int argc, char *argv[])
 	indev_drv.user_data = ctx;
 	lv_indev_drv_register(&indev_drv);
 
+	ui.lv_mutex = platform_create_mutex();
+	platform_atomic_set(&ui.filelist_populating, FP_POP_NO);
+	platform_atomic_set(&ui.filelist_finished, FP_POPFIN_YES);
+
 	create_top_ui(&ui);
 	create_bottom_ui(&ui);
 
 	while (exit_requested(ctx) == 0 && quit == false)
 	{
+		if (platform_atomic_get(&ui.filelist_finished) == FP_POPFIN_YES)
+			lv_obj_set_hidden(ui.fileloadspinner, true);
+
 		handle_events(ctx);
 		lv_task_handler();
 		render_present(ctx);
