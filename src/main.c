@@ -32,11 +32,6 @@
 #include <string.h>
 
 #define BUF_PX_SIZE (GSP_SCREEN_WIDTH_TOP * 64)
-#define print_fatal(x)                                                         \
-	fprintf(stderr, "FATAL: %s+%d: %s - %s\n", __func__, __LINE__, x,      \
-		strerror(errno))
-#define print_debug(x)                                                         \
-	fprintf(stderr, "DEBUG: %s+%d: %s\n", __func__, __LINE__, x)
 
 struct ui_ctx {
 	/* Opaque pointer for handling platform functions. */
@@ -676,16 +671,13 @@ int main(int argc, char *argv[])
 
 	ctx = init_system();
 	if (ctx == NULL)
-	{
-		print_fatal("Unable to initialise system");
 		goto err;
-	}
-
-	print_debug("System initialised");
 
 	/* Initialise LVGL. */
 	lv_init();
+#ifdef __DEBUG__
 	lv_log_register_print_cb(print_cb);
+#endif
 
 	lv_disp_buf_init(&lv_disp_buf_top, top_buf, NULL, BUF_PX_SIZE);
 	lv_disp_buf_init(&lv_disp_buf_bot, bot_buf, NULL, BUF_PX_SIZE);
@@ -756,7 +748,6 @@ int main(int argc, char *argv[])
 	exit_system(ctx);
 
 	ret = EXIT_SUCCESS;
-	print_debug("Successful exit");
 
 err:
 	return ret;
