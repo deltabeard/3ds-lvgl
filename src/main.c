@@ -12,17 +12,19 @@
 #endif
 
 #ifdef _MSC_VER
-#include <direct.h>
-#include <dirent_port.h>
-#define chdir _chdir
-#define getcwd _getcwd
+# include <direct.h>
+# include <dirent_port.h>
+# define chdir _chdir
+# define getcwd _getcwd
+# define strcasecmp _stricmp
 #else
-#include <dirent.h>
-#include <unistd.h>
+# include <dirent.h>
+# include <unistd.h>
 #endif
 
- #include <noto_sans_14_common.h>
+#include <noto_sans_14_common.h>
 
+#include <ctype.h>
 #include <errno.h>
 #include <lvgl.h>
 #include <platform.h>
@@ -363,6 +365,31 @@ out:
 	return 0;
 }
 
+/* Alphabetical sorting */
+static int smartfilesort(const struct dirent **a, const struct dirent **b)
+{
+	/* Sort by folders first. */
+	if((*a)->d_type == (*b)->d_type)
+		return 0;
+
+	if((*a)->d_type == DT_DIR)
+		return -1;
+
+	return 1;
+}
+
+static int sort_file(const void *in1, const void *in2)
+{
+	const struct dirent *const *d1 = in1;
+	const struct dirent *const *d2 = in2;
+
+#if 0
+	if(isdigit((*d1)->d_name[0]) != 0 && isdigit((*d2)->d_name[0] != 0))
+		return strverscmp((*d1)->d_name, (*d2)->d_name);
+#endif
+
+	return strcasecmp((*d1)->d_name, (*d2)->d_name);
+}
 
 static void recreate_filepicker(void *p)
 {
@@ -390,7 +417,7 @@ static void recreate_filepicker(void *p)
 	lv_obj_set_hidden(ui->fileloadspinner, true);
 	lv_spinner_set_arc_length(ui->fileloadspinner, 0);
 
-	c->entries = scandir(".", &c->namelist, NULL, alphasort);
+	c->entries = scandir(".", &c->namelist, NULL, smartfilesort);
 	if (c->entries == -1)
 	{
 		char err_txt[512] = "";
@@ -433,6 +460,24 @@ static void recreate_filepicker(void *p)
 	ticks = platform_get_ticks();
 	c->entries_added = 0;
 	c->u = ui;
+
+	/* Sort folders and files separately. */
+	{
+		int file_ent;
+
+		for(file_ent = 0; file_ent < c->entries; file_ent++)
+		{
+			if(c->namelist[file_ent]->d_type == DT_DIR)
+				continue;
+
+			break;
+		}
+
+		qsort(c->namelist, file_ent, sizeof(c->namelist),
+				sort_file);
+		qsort(c->namelist + file_ent, c->entries - file_ent,
+				sizeof(c->namelist), sort_file);
+	}
 
 	for (; c->entries_added < c->entries; c->entries_added++)
 	{
