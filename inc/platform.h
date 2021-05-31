@@ -23,7 +23,11 @@
 typedef struct platform_ctx platform_ctx_s;
 
 /* Thread function pointer. */
-typedef void *(platform_thread_fn)(void *);
+#ifdef __3DS__
+typedef void (*platform_thread_fn)(void *thread_data);
+#else
+typedef int (*platform_thread_fn)(void *thread_data);
+#endif
 
 /* Mutex context. */
 typedef void platform_mutex_s;
