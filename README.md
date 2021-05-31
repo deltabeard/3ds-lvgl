@@ -2,7 +2,7 @@
 
 Example application of the use of LVGL on the 3DS.
 
-![Screenshot of example running in Citra 3DS emulator](/meta/screenshot_filebrowser.png)
+![Screenshot of example running in Citra 3DS emulator](./meta/screenshot_filebrowser.png)
 
 The example demonstrates a file browser with full Unicode and bidirectional text support.
 
