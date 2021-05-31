@@ -151,6 +151,11 @@ static void show_error_msg(const char *msg, lv_disp_t *disp)
 	lv_obj_set_state(mbox1, LV_STATE_DISABLED);
 }
 
+static void btnev_file(lv_obj_t *btn, lv_event_t event)
+{
+	return;
+}
+
 static void btnev_chdir(lv_obj_t *btn, lv_event_t event)
 {
 	lv_obj_t *label;
@@ -253,7 +258,7 @@ static int filepicker_add_entries(void *p)
 	while (c->entries_added < c->entries &&
 	       platform_atomic_get(&ui->filelist_populating) == FP_POP_YES)
 	{
-		lv_event_cb_t event_cb;
+		lv_event_cb_t event_cb = btnev_file;
 		lv_anim_value_t deg;
 		const char *symbol = LV_SYMBOL_FILE;
 		mutex_stat_e mtx_stat;
