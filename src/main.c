@@ -11,7 +11,7 @@
 # define LV_USE_LOG 1
 #endif
 
-#ifdef _MSC_VER
+#ifdef _WIN32
 # include <direct.h>
 # include <dirent_port.h>
 # define chdir _chdir
