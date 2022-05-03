@@ -2,7 +2,6 @@ cmake_minimum_required(VERSION 3.20)
 project(3ds_lvgl C)
 
 set(CMAKE_C_STANDARD 99)
-find_package(SDL2 CONFIG REQUIRED)
 
 add_executable(3ds_lvgl)
 target_sources(3ds_lvgl PRIVATE src/main.c src/platform.c)
@@ -84,4 +83,41 @@ target_sources(3ds_lvgl PRIVATE inc/lvgl/src/lv_core/lv_disp.c
         inc/lvgl/src/lv_widgets/lv_tileview.c
         inc/lvgl/src/lv_widgets/lv_win.c)
 target_include_directories(3ds_lvgl PRIVATE inc inc/lvgl)
-target_link_libraries(3ds_lvgl PRIVATE SDL2::SDL2 SDL2::SDL2main)
+
+# Discover libraries
+IF(MSVC)
+	SET(DEFAULT_LIBRARY_DISCOVER_METHOD "CPM")
+ELSE()
+	SET(DEFAULT_LIBRARY_DISCOVER_METHOD "PKG_CONFIG")
+ENDIF()
+
+SET(LIBRARY_DISCOVER_METHOD DEFAULT_LIBRARY_DISCOVER_METHOD CACHE STRING
+        "Tool to use for discovering dependencies; options are: PKG_CONFIG, CPM")
+
+IF(${LIBRARY_DISCOVER_METHOD} STREQUAL "PKG_CONFIG")
+    INCLUDE(FindPkgConfig)
+    PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
+ELSEIF(${LIBRARY_DISCOVER_METHOD} STREQUAL "CPM")
+    INCLUDE(./ext/CPM.cmake)
+    CPMADDPACKAGE(GITHUB_REPOSITORY libsdl-org/SDL
+            NAME SDL2
+            GIT_TAG release-2.0.22
+            OPTIONS
+            "SDL_SHARED_ENABLED_BY_DEFAULT OFF"
+            "SDL_STATIC_ENABLED_BY_DEFAULT ON")
+
+    TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${SDL2_SOURCE_DIR}/include)
+    TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE SDL2-static SDL2main)
+ELSE()
+    MESSAGE(SEND_ERROR "LIBRARY_DISCOVER_METHOD '${LIBRARY_DISCOVER_METHOD}' is not valid")
+ENDIF()
+
+# Add required dependencies
+TARGET_LINK_LIBRARIES(${PROJECT_NAME} PRIVATE ${SDL2_LIBRARIES})
+
+# Some FindSDL2 modules use slightly different variables, so we just use both.
+TARGET_INCLUDE_DIRECTORIES(${PROJECT_NAME} PUBLIC ${SDL2_INCLUDE_DIRS} ${SDL2_INCLUDE_DIR})
+
+IF(MINGW)
+    ADD_COMPILE_DEFINITIONS(SDL_MAIN_HANDLED)
+ENDIF()
